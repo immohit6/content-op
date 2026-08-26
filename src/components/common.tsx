@@ -1,6 +1,8 @@
 import React from "react";
 import { ChannelDef, PRIORITY_META, Priority, STAGE_LABELS, Stage } from "../types";
 import { cx } from "../lib/utils";
+import { channelTextColor } from "../lib/color";
+import { useStore } from "../store/store";
 
 export function PriorityDot({ priority, className }: { priority: Priority; className?: string }) {
   const meta = PRIORITY_META[priority];
@@ -26,10 +28,12 @@ export function StageBadge({ stage }: { stage: Stage }) {
 }
 
 export function ChannelPill({ channel }: { channel: ChannelDef }) {
+  const theme = useStore((s) => s.settings.theme);
+  const textColor = channelTextColor(channel.color, theme);
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border"
-      style={{ color: channel.color, borderColor: `${channel.color}55`, backgroundColor: `${channel.color}14` }}
+      style={{ color: textColor, borderColor: `${channel.color}55`, backgroundColor: `${channel.color}14` }}
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: channel.color }} />
       {channel.name}
@@ -92,6 +96,15 @@ export function Modal({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  React.useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 pt-10 sm:pt-16" onClick={onClose}>

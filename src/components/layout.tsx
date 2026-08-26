@@ -53,8 +53,9 @@ export function Sidebar() {
         </div>
       </button>
 
-      <button onClick={openQuickAdd} className="btn-primary mb-4 w-full justify-center">
+      <button onClick={openQuickAdd} className="btn-primary mb-4 w-full justify-center gap-2">
         + Quick add
+        <kbd className="rounded border border-white/25 px-1 py-0.5 text-[10px] font-semibold leading-none text-white/80">N</kbd>
       </button>
 
       <nav className="flex flex-col gap-0.5">

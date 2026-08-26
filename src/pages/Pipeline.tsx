@@ -8,9 +8,11 @@ import { PriorityDot } from "../components/common";
 import { STAGE_LABELS, STAGES, ChannelId, Video } from "../types";
 import { formatShortDate } from "../lib/utils";
 import { cx } from "../lib/utils";
+import { channelTextColor } from "../lib/color";
 
 function VideoCard({ video, index, onClick }: { video: Video; index: number; onClick: () => void }) {
   const channel = CHANNEL_MAP[video.channelId];
+  const theme = useStore((s) => s.settings.theme);
   return (
     <Draggable draggableId={video.id} index={index}>
       {(provided, snapshot) => (
@@ -27,7 +29,7 @@ function VideoCard({ video, index, onClick }: { video: Video; index: number; onC
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <span
               className="truncate rounded-full px-2 py-0.5 text-[10px] font-medium"
-              style={{ color: channel.color, backgroundColor: `${channel.color}1a` }}
+              style={{ color: channelTextColor(channel.color, theme), backgroundColor: `${channel.color}1a` }}
             >
               {channel.name}
             </span>

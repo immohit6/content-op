@@ -4,6 +4,7 @@ import { Shell } from "./components/layout";
 import { Toaster } from "./components/Toaster";
 import { QuickAdd } from "./components/QuickAdd";
 import { useStore } from "./store/store";
+import { useUIStore } from "./store/uiStore";
 import Dashboard from "./pages/Dashboard";
 import ChannelPage from "./pages/ChannelPage";
 import Pipeline from "./pages/Pipeline";
@@ -15,12 +16,30 @@ import Strategist from "./pages/Strategist";
 import TodayWork from "./pages/TodayWork";
 import Settings from "./pages/Settings";
 
+function isTypingTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+
 export default function App() {
   const theme = useStore((s) => s.settings.theme);
+  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "n" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(document.activeElement)) return;
+      e.preventDefault();
+      openQuickAdd();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openQuickAdd]);
 
   return (
     <HashRouter>

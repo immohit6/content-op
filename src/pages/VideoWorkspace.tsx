@@ -10,6 +10,7 @@ import { generateScript } from "../services/scriptService";
 import { generatePackaging } from "../services/packagingService";
 import { analyzePerformance } from "../services/analyticsService";
 import { toast } from "../store/uiStore";
+import { channelTextColor } from "../lib/color";
 
 const TABS = ["Overview", "Research", "Script", "Packaging", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
@@ -35,6 +36,7 @@ export default function VideoWorkspace() {
   const updateVideo = useStore((s) => s.updateVideo);
   const deleteVideo = useStore((s) => s.deleteVideo);
   const aiSettings = useStore((s) => s.settings.ai);
+  const theme = useStore((s) => s.settings.theme);
   const [tab, setTab] = useState<Tab>("Overview");
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -120,7 +122,7 @@ export default function VideoWorkspace() {
             <div className="mb-2 flex items-center gap-2">
               <span
                 className="rounded-full px-2 py-0.5 text-[11px] font-medium"
-                style={{ color: channel.color, backgroundColor: `${channel.color}1a` }}
+                style={{ color: channelTextColor(channel.color, theme), backgroundColor: `${channel.color}1a` }}
               >
                 {channel.name}
               </span>
