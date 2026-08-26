@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark theme (default) — "R, G, B" triples consumed by tailwind.config.js */
+  --color-base-950: 10, 13, 19;
+  --color-base-900: 14, 18, 25;
+  --color-base-850: 17, 21, 29;
+  --color-base-800: 22, 27, 37;
+  --color-base-700: 30, 37, 48;
+  --color-base-600: 42, 50, 64;
+  --color-base-500: 58, 68, 86;
+  --color-base-400: 91, 101, 118;
+  --color-base-300: 136, 146, 160;
+  --color-base-200: 180, 188, 199;
+  --color-base-100: 228, 231, 236;
+}
+
+:root[data-theme="light"] {
+  --color-base-950: 246, 247, 249;
+  --color-base-900: 255, 255, 255;
+  --color-base-850: 248, 249, 251;
+  --color-base-800: 238, 240, 244;
+  --color-base-700: 223, 226, 231;
+  --color-base-600: 202, 207, 214;
+  --color-base-500: 138, 146, 160;
+  --color-base-400: 100, 110, 126;
+  --color-base-300: 90, 99, 114;
+  --color-base-200: 55, 65, 81;
+  --color-base-100: 18, 21, 27;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-base-950 text-base-100 font-sans;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme("colors.base.600");
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme("colors.base.500");
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-base-900 border border-base-700/60 rounded-xl shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent-soft active:bg-accent-dim;
+  }
+  .btn-secondary {
+    @apply btn bg-base-800 text-base-100 border border-base-600 hover:bg-base-700;
+  }
+  .btn-ghost {
+    @apply btn text-base-300 hover:text-base-100 hover:bg-base-800;
+  }
+  .input {
+    @apply w-full rounded-lg bg-base-850 border border-base-600 px-3 py-2 text-sm text-base-100 placeholder-base-400 focus:outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent;
+  }
+  .label {
+    @apply text-xs font-medium uppercase tracking-wide text-base-400;
+  }
+}
