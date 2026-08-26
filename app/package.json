@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:root": "npm run build && node ../scripts/publish-root.mjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },

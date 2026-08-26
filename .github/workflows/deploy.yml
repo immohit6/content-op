@@ -1,5 +1,9 @@
 name: Deploy Content OS to GitHub Pages
 
+# Only relevant if this repo's Pages source is set to "GitHub Actions"
+# (Settings → Pages → Source). If Pages is set to "Deploy from a branch"
+# instead, GitHub serves the repo root directly and this workflow doesn't
+# run automatically — see the root-mirror note in README.md.
 on:
   push:
     branches: [main]
@@ -17,17 +21,21 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: app/dist
 
   deploy:
     needs: build

@@ -8,6 +8,7 @@ Opens to one answer: **what should I work on today.**
 ## Run it locally
 
 ```bash
+cd app
 npm install
 npm run dev
 ```
@@ -18,19 +19,36 @@ five channels — no account, no API key, no backend.
 ## Build
 
 ```bash
-npm run build   # type-checks, then builds to dist/
+cd app
+npm run build   # type-checks, then builds to app/dist/
 npm run preview # serve the production build locally
 ```
 
 ## Deploy to GitHub Pages
 
-A workflow at `.github/workflows/deploy.yml` builds and deploys `dist/` automatically on every
-push to `main`. One-time setup:
+The real, source-controlled app lives in `app/`. Everything else at the repo root
+(`index.html`, `assets/`, `manifest.json`, `icon-*.png`) is a **generated, committed build
+of `app/`** — not hand-written — kept at root so GitHub Pages' classic "Deploy from a branch"
+source can serve it directly with zero configuration, since that mode has no build step of its
+own and can't run Vite/TypeScript.
 
-1. Push this repo to GitHub (or push to `main` if it's already there).
-2. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Push to `main` (or run the workflow manually from the **Actions** tab). The app will be live
-   at `https://<your-username>.github.io/<repo-name>/`.
+**Which setup applies to you depends on this repo's Pages source** (Settings → Pages):
+
+- **Source = "Deploy from a branch"** (GitHub's default, and what this repo currently uses):
+  nothing to configure. The root of this branch is already a working build. After merging
+  changes into whichever branch Pages is watching, just make sure the root mirror is
+  up to date first:
+  ```bash
+  cd app
+  npm run build:root   # builds app/, then copies app/dist/* up to the repo root
+  git add -A && git commit -m "Publish build" && git push
+  ```
+- **Source = "GitHub Actions"** (cleaner long-term option — no committed build output): the
+  workflow at `.github/workflows/deploy.yml` builds `app/` and deploys it automatically on every
+  push to `main`. Flip **Settings → Pages → Source → GitHub Actions** once, and you can stop
+  committing the root mirror.
+
+Either way the app ends up at `https://<your-username>.github.io/<repo-name>/`.
 
 No build secrets are required — AI features run in demo mode by default and only call a real
 provider if you add your own API key in **Settings** (stored in your browser only, never sent
@@ -39,18 +57,24 @@ anywhere but directly to that provider).
 ## How it's organized
 
 ```
-src/
-  types.ts              Core domain types (Video, Idea, Channel, Stage, Settings…)
-  data/                 Channel definitions + realistic seed content
-  store/                Zustand store, persisted to localStorage
-  lib/                  Small pure helpers (dates, pipeline stages, utils)
-  services/             AI service layer — one file per capability:
-                         researchService, scriptService, packagingService,
-                         ideaService, analyticsService, strategyService, planService
-    services/ai/        provider.ts (OpenAI/Anthropic fetch calls), mockGen.ts
-                         (channel-aware demo generation), flavor.ts (per-channel voice)
-  components/           Shared UI (layout, badges, modal, empty states)
-  pages/                One file per screen (Dashboard, Pipeline, Video workspace, …)
+app/                     The real app — this is what you edit
+  src/
+    types.ts              Core domain types (Video, Idea, Channel, Stage, Settings…)
+    data/                 Channel definitions + realistic seed content
+    store/                Zustand store, persisted to localStorage
+    lib/                  Small pure helpers (dates, pipeline stages, utils)
+    services/             AI service layer — one file per capability:
+                           researchService, scriptService, packagingService,
+                           ideaService, analyticsService, strategyService, planService
+      services/ai/        provider.ts (OpenAI/Anthropic fetch calls), mockGen.ts
+                           (channel-aware demo generation), flavor.ts (per-channel voice)
+    components/           Shared UI (layout, badges, modal, empty states)
+    pages/                One file per screen (Dashboard, Pipeline, Video workspace, …)
+
+scripts/publish-root.mjs  Copies app/dist/* to the repo root (see Deploy section above)
+
+index.html, assets/,      Generated build output, committed for classic Pages branch-deploy.
+manifest.json, icon-*.png Regenerate with `npm run build:root` in app/ — never hand-edit.
 ```
 
 Every AI feature is a plain async function with a typed return shape. With no API key
