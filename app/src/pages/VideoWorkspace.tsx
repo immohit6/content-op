@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useStore } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { CostHint, EmptyState, NextActionBanner, PriorityBadge, ScoreBadge, StageBadge } from "../components/common";
 import { STAGE_LABELS, STAGES, Priority, Stage } from "../types";
 import { cx } from "../lib/utils";

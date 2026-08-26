@@ -1,6 +1,7 @@
-import { ChannelDef, ChannelId } from "../types";
+import { ChannelDef } from "../types";
 
-export const CHANNELS: ChannelDef[] = [
+/** Initial seed content — the app's own channel list now lives in the store (user-editable), this is just the starting point for a fresh install. */
+export const DEFAULT_CHANNELS: ChannelDef[] = [
   {
     id: "world-explained",
     name: "The World Explained",
@@ -53,33 +54,13 @@ export const CHANNELS: ChannelDef[] = [
   },
 ];
 
-export const CHANNEL_MAP: Record<ChannelId, ChannelDef> = CHANNELS.reduce(
-  (acc, c) => {
-    acc[c.id] = c;
-    return acc;
-  },
-  {} as Record<ChannelId, ChannelDef>
-);
-
-const UNKNOWN_CHANNEL: ChannelDef = {
-  id: "world-explained",
+/** Placeholder shown for a video/idea whose channel was deleted (or never existed — malformed import). */
+export const UNKNOWN_CHANNEL: ChannelDef = {
+  id: "__unknown__",
   name: "Unknown channel",
-  tagline: "This video references a channel that no longer exists.",
+  tagline: "This item references a channel that no longer exists.",
   niche: [],
   voice: "",
   color: "#5B6576",
   publishFrequencyPerWeek: 1,
 };
-
-/**
- * Safe channel lookup — prefer this over indexing CHANNEL_MAP directly.
- * `channelId` is normally a compile-time-checked ChannelId everywhere in
- * this app's own code, but it can also come from imported JSON (no runtime
- * validation) or, indirectly, a slightly malformed real AI response. A
- * missing/renamed id there would make `CHANNEL_MAP[id]` return `undefined`
- * and crash every caller downstream (`.name`, `.color`, ...) instead of
- * just rendering a clearly-labeled placeholder.
- */
-export function getChannel(channelId: string): ChannelDef {
-  return CHANNEL_MAP[channelId as ChannelId] ?? UNKNOWN_CHANNEL;
-}

@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { EmptyState, Modal, NextActionBanner, PriorityBadge, StageBadge, StatCard } from "../components/common";
 import { PRODUCTION_STAGES } from "../lib/pipeline";
 import { formatShortDate, todayIso } from "../lib/utils";
-import { ChannelId, Priority, Stage } from "../types";
+import { Priority, Stage } from "../types";
 import { toast } from "../store/uiStore";
 
 export default function ChannelPage() {
   const { id } = useParams<{ id: string }>();
-  const channel = id ? CHANNEL_MAP[id as ChannelId] : undefined;
+  const channels = useStore((s) => s.channels);
+  const channel = id ? channels.find((c) => c.id === id) : undefined;
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
   const addVideo = useStore((s) => s.addVideo);

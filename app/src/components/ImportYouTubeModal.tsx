@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "./common";
-import { useStore, ALL_CHANNELS } from "../store/store";
+import { useStore } from "../store/store";
 import { ChannelId } from "../types";
 import { extractVideoId, fetchLiveVideoStats, fetchUploadsPage, resolveUploadsPlaylistId, UploadedVideo, YouTubeApiError } from "../services/youtubeService";
 import { toast } from "../store/uiStore";
@@ -9,10 +9,11 @@ import { formatShortDate } from "../lib/utils";
 export function ImportYouTubeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const settings = useStore((s) => s.settings);
   const videos = useStore((s) => s.videos);
+  const allChannels = useStore((s) => s.channels);
   const addVideo = useStore((s) => s.addVideo);
   const updateVideo = useStore((s) => s.updateVideo);
 
-  const linkedChannels = ALL_CHANNELS.filter((c) => settings.youtube.channelIds?.[c.id]?.trim());
+  const linkedChannels = allChannels.filter((c) => settings.youtube.channelIds?.[c.id]?.trim());
   const [channelId, setChannelId] = useState<ChannelId | "">("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<UploadedVideo[]>([]);

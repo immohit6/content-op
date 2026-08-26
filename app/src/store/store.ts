@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CHANNELS } from "../data/channels";
+import { DEFAULT_CHANNELS, UNKNOWN_CHANNEL } from "../data/channels";
 import { buildSeedIdeas, buildSeedVideos } from "../data/seed";
 import {
   AppSettings,
+  ChannelDef,
   ChannelId,
   DailyPlan,
   Idea,
@@ -13,7 +14,7 @@ import {
   Stage,
   Video,
 } from "../types";
-import { todayIso, uid } from "../lib/utils";
+import { slugify, todayIso, uid } from "../lib/utils";
 
 const DEFAULT_SETTINGS: AppSettings = {
   ai: { provider: "mock", apiKey: "", model: "" },
@@ -28,9 +29,15 @@ const DEFAULT_SETTINGS: AppSettings = {
 export interface StoreShape {
   videos: Video[];
   ideas: Idea[];
+  channels: ChannelDef[];
   settings: AppSettings;
   dailyPlan: DailyPlan | null;
   spend: { totalUSD: number; entries: SpendEntry[] };
+
+  addChannel: (partial: Partial<Omit<ChannelDef, "id">> & { name: string; id?: string }) => ChannelDef;
+  updateChannel: (id: ChannelId, patch: Partial<Omit<ChannelDef, "id">>) => void;
+  /** Removes the channel definition only — any videos/ideas that referenced it are left alone (they'll show as "Unknown channel" until reassigned) rather than being deleted. Returns null if the delete was refused (last remaining channel). */
+  deleteChannel: (id: ChannelId) => { videosAffected: number; ideasAffected: number } | null;
 
   addVideo: (partial: Partial<Video> & { channelId: ChannelId; title: string }) => Video;
   updateVideo: (id: string, patch: Partial<Video>) => void;
@@ -52,8 +59,8 @@ export interface StoreShape {
   setDailyPlan: (plan: DailyPlan) => void;
   toggleDailyItem: (itemId: string) => void;
 
-  exportData: () => { videos: Video[]; ideas: Idea[]; settings: AppSettings };
-  importData: (data: { videos?: Video[]; ideas?: Idea[]; settings?: AppSettings }) => void;
+  exportData: () => { videos: Video[]; ideas: Idea[]; channels: ChannelDef[]; settings: AppSettings };
+  importData: (data: { videos?: Video[]; ideas?: Idea[]; channels?: ChannelDef[]; settings?: AppSettings }) => void;
   resetDemoData: () => void;
   clearAllContent: () => void;
 }
@@ -81,9 +88,47 @@ export const useStore = create<StoreShape>()(
     (set, get) => ({
       videos: buildSeedVideos(),
       ideas: buildSeedIdeas(),
+      channels: DEFAULT_CHANNELS,
       settings: DEFAULT_SETTINGS,
       dailyPlan: null,
       spend: { totalUSD: 0, entries: [] },
+
+      addChannel: (partial) => {
+        const existingIds = new Set(get().channels.map((c) => c.id));
+        let id = slugify(partial.id?.trim() || partial.name);
+        while (existingIds.has(id)) id = `${id}-2`;
+        const c: ChannelDef = {
+          tagline: "",
+          niche: [],
+          voice: "",
+          color: "#5B8CFF",
+          publishFrequencyPerWeek: 1,
+          ...partial,
+          id,
+        };
+        set((s) => ({ channels: [...s.channels, c] }));
+        return c;
+      },
+
+      updateChannel: (id, patch) => {
+        set((s) => ({ channels: s.channels.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+      },
+
+      deleteChannel: (id) => {
+        const state = get();
+        if (state.channels.length <= 1) return null;
+        const videosAffected = state.videos.filter((v) => v.channelId === id).length;
+        const ideasAffected = state.ideas.filter((i) => i.channelId === id).length;
+        set((s) => {
+          const channels = s.channels.filter((c) => c.id !== id);
+          const stillValidDefault = channels.some((c) => c.id === s.settings.defaultChannelId);
+          return {
+            channels,
+            settings: stillValidDefault ? s.settings : { ...s.settings, defaultChannelId: channels[0].id },
+          };
+        });
+        return { videosAffected, ideasAffected };
+      },
 
       addVideo: (partial) => {
         const now = new Date().toISOString();
@@ -200,10 +245,11 @@ export const useStore = create<StoreShape>()(
       },
 
       exportData: () => {
-        const { videos, ideas, settings } = get();
+        const { videos, ideas, channels, settings } = get();
         return {
           videos,
           ideas,
+          channels,
           settings: { ...settings, ai: { ...settings.ai, apiKey: "" }, youtube: { ...settings.youtube, apiKey: "" } },
         };
       },
@@ -225,13 +271,14 @@ export const useStore = create<StoreShape>()(
           return {
             videos: data.videos ?? s.videos,
             ideas: data.ideas ?? s.ideas,
+            channels: data.channels && data.channels.length > 0 ? data.channels : s.channels,
             settings,
           };
         });
       },
 
       resetDemoData: () => {
-        set({ videos: buildSeedVideos(), ideas: buildSeedIdeas(), dailyPlan: null });
+        set({ videos: buildSeedVideos(), ideas: buildSeedIdeas(), channels: DEFAULT_CHANNELS, dailyPlan: null });
       },
 
       clearAllContent: () => {
@@ -240,7 +287,7 @@ export const useStore = create<StoreShape>()(
     }),
     {
       name: "content-os-store",
-      partialize: (s) => ({ videos: s.videos, ideas: s.ideas, settings: s.settings, dailyPlan: s.dailyPlan, spend: s.spend }),
+      partialize: (s) => ({ videos: s.videos, ideas: s.ideas, channels: s.channels, settings: s.settings, dailyPlan: s.dailyPlan, spend: s.spend }),
       // Zustand's default merge is a shallow spread of persisted state over the
       // fresh defaults — fine for top-level keys, but `settings` predating a
       // newly-added field (e.g. `youtube`, added after some users already had
@@ -257,6 +304,7 @@ export const useStore = create<StoreShape>()(
           ...currentState,
           ...persisted,
           videos: persisted.videos ? stripLeftoverDemoMetrics(persisted.videos) : currentState.videos,
+          channels: persisted.channels && persisted.channels.length > 0 ? persisted.channels : currentState.channels,
           settings: {
             ...currentState.settings,
             ...persistedSettings,
@@ -270,7 +318,17 @@ export const useStore = create<StoreShape>()(
   )
 );
 
-export const ALL_CHANNELS = CHANNELS;
+/**
+ * Safe channel lookup for non-reactive contexts (service functions aren't
+ * React components, so they can't use a hook) — always reads the live store
+ * state, falling back to a clearly-labeled placeholder for a missing/deleted
+ * channel instead of throwing on `.name`/`.color`/etc downstream. Components
+ * that need to re-render when the channel list itself changes should prefer
+ * `useStore((s) => s.channels)` directly.
+ */
+export function getChannel(channelId: string): ChannelDef {
+  return useStore.getState().channels.find((c) => c.id === channelId) ?? UNKNOWN_CHANNEL;
+}
 
 export function priorityRank(p: Priority): number {
   return { urgent: 0, high: 1, medium: 2, low: 3 }[p];

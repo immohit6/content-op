@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { Modal } from "../components/common";
 import { cx, formatDate, monthLabel, todayIso, toLocalIso } from "../lib/utils";
@@ -21,6 +20,7 @@ function startOfWeek(d: Date): Date {
 export default function CalendarPage() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
+  const channels = useStore((s) => s.channels);
   const updateVideo = useStore((s) => s.updateVideo);
   const addVideo = useStore((s) => s.addVideo);
   const defaultChannelId = useStore((s) => s.settings.defaultChannelId);
@@ -238,7 +238,7 @@ export default function CalendarPage() {
             <div>
               <label className="label">Channel</label>
               <select className="input mt-1" value={newChannel} onChange={(e) => setNewChannel(e.target.value as ChannelId)}>
-                {ALL_CHANNELS.map((c) => (
+                {channels.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>

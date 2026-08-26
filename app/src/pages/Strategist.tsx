@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, ScoreBadge } from "../components/common";
 import { recommendNextVideos, estimateStrategyCost } from "../services/strategyService";
@@ -14,20 +13,21 @@ export default function Strategist() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
   const ideas = useStore((s) => s.ideas);
+  const channels = useStore((s) => s.channels);
   const addVideo = useStore((s) => s.addVideo);
   const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
   const [recs, setRecs] = useState<StrategyRecommendation[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasRun, setHasRun] = useState(false);
 
-  const est = estimateStrategyCost(ALL_CHANNELS, videos, ideas, aiSettings);
+  const est = estimateStrategyCost(channels, videos, ideas, aiSettings);
   const usesRealProvider = isRealProvider(aiSettings.provider, aiSettings.apiKey);
 
   async function refresh() {
     if (!confirmSpend(est, "Generate recommendations")) return;
     setLoading(true);
     try {
-      const result = await recommendNextVideos(ALL_CHANNELS, videos, ideas, aiSettings);
+      const result = await recommendNextVideos(channels, videos, ideas, aiSettings);
       setRecs(result);
       setHasRun(true);
       logSpend("Strategy", est);

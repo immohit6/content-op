@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS } from "../store/store";
+import { useStore } from "../store/store";
 import { useUIStore, toast } from "../store/uiStore";
 import { Modal } from "./common";
 import { ChannelId, Priority } from "../types";
@@ -14,6 +14,7 @@ export function QuickAdd() {
   const navigate = useNavigate();
   const addVideo = useStore((s) => s.addVideo);
   const addIdea = useStore((s) => s.addIdea);
+  const channels = useStore((s) => s.channels);
   const defaultChannelId = useStore((s) => s.settings.defaultChannelId);
 
   const [kind, setKind] = useState<Kind>("idea");
@@ -84,7 +85,7 @@ export function QuickAdd() {
         <div>
           <label className="label">Channel</label>
           <select className="input mt-1" value={channelId} onChange={(e) => setChannelId(e.target.value as ChannelId)}>
-            {ALL_CHANNELS.map((c) => (
+            {channels.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

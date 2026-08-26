@@ -9,7 +9,7 @@ import {
   StrategyRecommendation,
   Video,
 } from "../../types";
-import { CHANNEL_FLAVOR } from "./flavor";
+import { getFlavor } from "./flavor";
 import { isoDaysFromNow, uid } from "../../lib/utils";
 
 function pick<T>(arr: T[], n: number): T[] {
@@ -26,11 +26,11 @@ function round1(n: number): number {
 }
 
 export function buildMockResearch(video: Video, channel: ChannelDef): ResearchData {
-  const f = CHANNEL_FLAVOR[channel.id];
+  const f = getFlavor(channel.id);
   const t = video.title;
   return {
     keyFacts: [
-      `${t} sits at the intersection of ${channel.niche[0].toLowerCase()} and ${channel.niche[1]?.toLowerCase() ?? channel.niche[0].toLowerCase()}.`,
+      `${t} sits at the intersection of ${(channel.niche[0] ?? "this channel's focus").toLowerCase()} and ${(channel.niche[1] ?? channel.niche[0] ?? "the audience's interests").toLowerCase()}.`,
       `The most recent reporting on this topic shifted meaningfully in the last 12 months — worth anchoring the video's timeliness there.`,
       `There is a specific, citable statistic available for this topic that will anchor the hook.`,
     ],
@@ -46,7 +46,7 @@ export function buildMockResearch(video: Video, channel: ChannelDef): ResearchDa
 }
 
 export function buildMockScript(video: Video, channel: ChannelDef): ScriptData {
-  const f = CHANNEL_FLAVOR[channel.id];
+  const f = getFlavor(channel.id);
   const t = video.title;
   const openers = f.openers(t);
   const hookTexts = pick(openers.concat(openers), 3);
@@ -82,7 +82,7 @@ export function buildMockScript(video: Video, channel: ChannelDef): ScriptData {
 }
 
 export function buildMockPackaging(video: Video, channel: ChannelDef): PackagingData {
-  const f = CHANNEL_FLAVOR[channel.id];
+  const f = getFlavor(channel.id);
   const t = video.title;
   const titleTexts = f.titleTemplates(t);
   const titles = titleTexts.map((title) => ({ title, ctrScore: round1(5.5 + Math.random() * 4) }));
@@ -106,7 +106,7 @@ export function buildMockPackaging(video: Video, channel: ChannelDef): Packaging
 }
 
 export function buildMockIdeas(channel: ChannelDef, count: number): Omit<Idea, "id" | "dateAdded">[] {
-  const f = CHANNEL_FLAVOR[channel.id];
+  const f = getFlavor(channel.id);
   const topics = pick(f.ideaTopics, Math.min(count, f.ideaTopics.length));
   while (topics.length < count) topics.push(f.ideaTopics[topics.length % f.ideaTopics.length]);
   return topics.map((topicDef) => {
@@ -196,7 +196,7 @@ export function buildMockStrategy(
   const recs: StrategyRecommendation[] = [];
   for (const entry of perChannel) {
     if (recs.length >= 5) break;
-    const f = CHANNEL_FLAVOR[entry.channel.id];
+    const f = getFlavor(entry.channel.id);
     const bestIdea = [...entry.unusedIdeas].sort((a, b) => b.ctrScore + b.retentionScore - (a.ctrScore + a.retentionScore))[0];
     if (bestIdea) {
       recs.push({
@@ -221,7 +221,7 @@ export function buildMockStrategy(
   }
   while (recs.length < 5) {
     const c = channels[recs.length % channels.length];
-    const f = CHANNEL_FLAVOR[c.id];
+    const f = getFlavor(c.id);
     const topicDef = f.ideaTopics[recs.length % f.ideaTopics.length];
     recs.push({
       channelId: c.id,
