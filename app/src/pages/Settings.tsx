@@ -42,11 +42,14 @@ export default function Settings() {
   }
 
   const [draftYoutubeKey, setDraftYoutubeKey] = useState(settings.youtube.apiKey);
-  const youtubeDirty = draftYoutubeKey !== settings.youtube.apiKey;
+  const [draftChannelIds, setDraftChannelIds] = useState<Partial<Record<ChannelId, string>>>(settings.youtube.channelIds ?? {});
+  const youtubeDirty =
+    draftYoutubeKey !== settings.youtube.apiKey ||
+    JSON.stringify(draftChannelIds) !== JSON.stringify(settings.youtube.channelIds ?? {});
 
   function saveYoutube() {
-    updateSettings({ youtube: { apiKey: draftYoutubeKey } });
-    toast("YouTube API key saved", "success");
+    updateSettings({ youtube: { apiKey: draftYoutubeKey, channelIds: draftChannelIds } });
+    toast("YouTube settings saved", "success");
   }
 
   function handleExport() {
@@ -156,12 +159,32 @@ export default function Settings() {
               only in this browser, only applied once you hit Save.
             </p>
           </div>
+          <div className="border-t border-base-700/60 pt-4">
+            <label className="label">Real YouTube channel per app channel</label>
+            <p className="mt-1 mb-3 text-[11px] text-base-500">
+              Paste each channel's ID, @handle, or channel URL to enable importing its older uploads from Analytics
+              → "Import old videos". Optional — leave blank for channels you don't want to import from.
+            </p>
+            <div className="flex flex-col gap-2">
+              {ALL_CHANNELS.map((c) => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <span className="w-32 shrink-0 truncate text-xs text-base-400">{c.name}</span>
+                  <input
+                    className="input"
+                    value={draftChannelIds[c.id] ?? ""}
+                    onChange={(e) => setDraftChannelIds((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                    placeholder="@handle, UC…, or channel URL"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center justify-between border-t border-base-700/60 pt-4">
             <span className="text-xs text-base-500">
               {youtubeDirty ? "Unsaved changes." : settings.youtube.apiKey ? "Saved and active." : "No key set — sync is unavailable until you add one."}
             </span>
             <button className="btn-primary" onClick={saveYoutube} disabled={!youtubeDirty}>
-              Save YouTube key
+              Save YouTube settings
             </button>
           </div>
         </div>

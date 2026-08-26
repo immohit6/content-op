@@ -165,6 +165,8 @@ export interface AISettings {
 
 export interface YouTubeSettings {
   apiKey: string;
+  /** Real YouTube channel ID/handle/URL linked to each app channel, so historical uploads can be listed. */
+  channelIds?: Partial<Record<ChannelId, string>>;
 }
 
 export interface AppSettings {

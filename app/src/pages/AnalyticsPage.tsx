@@ -10,6 +10,7 @@ import { toast } from "../store/uiStore";
 import { formatUSD } from "../lib/pricing";
 import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
 import { extractVideoId, fetchLiveVideoStats, YouTubeApiError } from "../services/youtubeService";
+import { ImportYouTubeModal } from "../components/ImportYouTubeModal";
 import { Video } from "../types";
 
 const METRIC_FIELDS = [
@@ -32,6 +33,7 @@ export default function AnalyticsPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const published = useMemo(
     () =>
@@ -136,11 +138,18 @@ export default function AnalyticsPage() {
         title="Analytics"
         subtitle="Real views/likes/comments from YouTube, plus AI conclusions — not generic advice."
         action={
-          <button className="btn-primary" onClick={syncAll} disabled={syncingAll}>
-            {syncingAll ? "Syncing…" : "↻ Sync all from YouTube"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-secondary" onClick={() => setShowImport(true)}>
+              ↓ Import old videos
+            </button>
+            <button className="btn-primary" onClick={syncAll} disabled={syncingAll}>
+              {syncingAll ? "Syncing…" : "↻ Sync all from YouTube"}
+            </button>
+          </div>
         }
       />
+
+      <ImportYouTubeModal open={showImport} onClose={() => setShowImport(false)} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Published videos" value={totals.count} />
