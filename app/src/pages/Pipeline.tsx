@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
-import { useStore, ALL_CHANNELS } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { PriorityDot } from "../components/common";
 import { STAGE_LABELS, STAGES, ChannelId, Video } from "../types";
@@ -47,6 +46,7 @@ function VideoCard({ video, index, onClick }: { video: Video; index: number; onC
 export default function Pipeline() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
+  const channels = useStore((s) => s.channels);
   const moveVideoStage = useStore((s) => s.moveVideoStage);
   const [channelFilter, setChannelFilter] = useState<ChannelId | "all">("all");
 
@@ -88,7 +88,7 @@ export default function Pipeline() {
         >
           All channels
         </button>
-        {ALL_CHANNELS.map((c) => (
+        {channels.map((c) => (
           <button
             key={c.id}
             onClick={() => setChannelFilter(c.id)}

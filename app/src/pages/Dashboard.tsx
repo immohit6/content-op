@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS, priorityRank } from "../store/store";
+import { useStore, priorityRank } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { EmptyState, PriorityDot } from "../components/common";
 import { STAGE_VERB, PRODUCTION_STAGES } from "../lib/pipeline";
@@ -29,6 +29,7 @@ function TodayItem({ video, onClick }: { video: Video; onClick: () => void }) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
+  const channels = useStore((s) => s.channels);
 
   const todayItems = useMemo(() => {
     const actionable = videos.filter((v) => v.stage !== "published" && v.stage !== "analytics");
@@ -62,7 +63,7 @@ export default function Dashboard() {
       <section>
         <h2 className="mb-3 text-sm font-semibold text-base-100">Channels</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {ALL_CHANNELS.map((c) => {
+          {channels.map((c) => {
             const chVideos = videos.filter((v) => v.channelId === c.id);
             const active = chVideos.filter((v) => v.stage !== "published" && v.stage !== "analytics").length;
             const inProduction = chVideos.filter((v) => PRODUCTION_STAGES.includes(v.stage)).length;

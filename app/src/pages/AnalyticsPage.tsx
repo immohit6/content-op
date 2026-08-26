@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, StatCard } from "../components/common";
 import { formatShortDate } from "../lib/utils";
@@ -32,6 +31,7 @@ const MANUAL_METRIC_FIELDS = [
 export default function AnalyticsPage() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
+  const channels = useStore((s) => s.channels);
   const updateVideo = useStore((s) => s.updateVideo);
   const youtubeApiKey = useStore((s) => s.settings.youtube.apiKey);
   const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
@@ -56,7 +56,7 @@ export default function AnalyticsPage() {
   }, [published]);
 
   const byChannel = useMemo(() => {
-    return ALL_CHANNELS.map((c) => {
+    return channels.map((c) => {
       const chVideos = published.filter((v) => v.channelId === c.id);
       const withViews = chVideos.filter((v) => v.metrics?.views);
       return {

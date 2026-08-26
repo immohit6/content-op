@@ -17,6 +17,34 @@ export interface ChannelFlavor {
   scriptTone: string;
 }
 
+// Generic fallback for a channel the user added themselves — none of the 5
+// built-in demo channels' hand-written flavor entries below apply to it, so
+// mock generation needs something usable instead of crashing on a missing key.
+const DEFAULT_FLAVOR: ChannelFlavor = {
+  scriptTone: "clear, engaging narrator",
+  hookAngles: ["strong opening question", "surprising fact", "clear promise of value"],
+  openers: (t) => [`Here's what you need to know about ${t}.`, `Let's get straight into ${t}.`],
+  contextThemes: ["Background the viewer needs before the main point", "Why this matters right now"],
+  contrarian: (t) => [`Most takes on ${t} miss one important detail — here it is.`],
+  storyOps: (t) => [`Open with the single most interesting fact about ${t}.`],
+  factCheck: ["Verify any statistics or claims before publish"],
+  bRoll: (t) => [`Relevant footage or visuals for ${t}`, "Simple on-screen text callouts", "Close-up detail shots"],
+  patternInterrupts: ["Quick cut on a key point", "Brief pause before the main reveal"],
+  ctas: (t) => [`If ${t} was useful, let me know in the comments what to cover next.`],
+  thumbTextStyle: ["3-5 bold words, high contrast"],
+  titleTemplates: (t) => [`${t}`, `${t} — Explained`, `The Truth About ${t}`, `${t}: What You Need to Know`, `${t} — A Closer Look`],
+  ideaTopics: [
+    { topic: "Beginner essentials", angle: "The one thing newcomers always get wrong." },
+    { topic: "Common mistake", angle: "A widespread mistake and how to avoid it." },
+    { topic: "Behind the scenes", angle: "How this actually gets made or works." },
+  ],
+  descriptionOpener: (t) => `A closer look at ${t}.`,
+};
+
+export function getFlavor(channelId: ChannelId): ChannelFlavor {
+  return CHANNEL_FLAVOR[channelId] ?? DEFAULT_FLAVOR;
+}
+
 export const CHANNEL_FLAVOR: Record<ChannelId, ChannelFlavor> = {
   "world-explained": {
     scriptTone: "documentary narrator",

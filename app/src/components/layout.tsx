@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cx } from "../lib/utils";
-import { ALL_CHANNELS } from "../store/store";
+import { useStore } from "../store/store";
 import { useUIStore } from "../store/uiStore";
 
 function Icon({ d, className }: { d: string; className?: string }) {
@@ -43,6 +43,7 @@ function navClass({ isActive }: { isActive: boolean }) {
 export function Sidebar() {
   const navigate = useNavigate();
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
+  const channels = useStore((s) => s.channels);
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-base-700/60 bg-base-950 px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
       <button onClick={() => navigate("/")} className="mb-4 flex items-center gap-2 px-2 text-left">
@@ -69,7 +70,7 @@ export function Sidebar() {
 
       <div className="mt-6 px-2 text-[11px] font-semibold uppercase tracking-wide text-base-500">Channels</div>
       <nav className="mt-1 flex flex-col gap-0.5">
-        {ALL_CHANNELS.map((c) => (
+        {channels.map((c) => (
           <NavLink key={c.id} to={`/channel/${c.id}`} className={navClass}>
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
             <span className="truncate">{c.name}</span>

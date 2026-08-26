@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore, ALL_CHANNELS } from "../store/store";
-import { getChannel } from "../data/channels";
+import { useStore, getChannel } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, Modal, PriorityBadge, ScoreBadge } from "../components/common";
 import { ChannelId, Idea, IdeaStatus, Priority } from "../types";
@@ -23,6 +22,7 @@ const STATUS_LABEL: Record<IdeaStatus, string> = {
 export default function IdeaBank() {
   const navigate = useNavigate();
   const ideas = useStore((s) => s.ideas);
+  const channels = useStore((s) => s.channels);
   const addIdea = useStore((s) => s.addIdea);
   const addIdeasBulk = useStore((s) => s.addIdeasBulk);
   const updateIdea = useStore((s) => s.updateIdea);
@@ -129,7 +129,7 @@ export default function IdeaBank() {
       <div className="flex flex-wrap items-center gap-2">
         <select className="input !w-auto" value={channelFilter} onChange={(e) => setChannelFilter(e.target.value as any)}>
           <option value="all">All channels</option>
-          {ALL_CHANNELS.map((c) => (
+          {channels.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -207,7 +207,7 @@ export default function IdeaBank() {
           <div>
             <label className="label">Channel</label>
             <select className="input mt-1" value={genChannel} onChange={(e) => setGenChannel(e.target.value as ChannelId)}>
-              {ALL_CHANNELS.map((c) => (
+              {channels.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -249,7 +249,7 @@ export default function IdeaBank() {
               value={form.channelId}
               onChange={(e) => setForm({ ...form, channelId: e.target.value as ChannelId })}
             >
-              {ALL_CHANNELS.map((c) => (
+              {channels.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

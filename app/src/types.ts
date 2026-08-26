@@ -1,4 +1,7 @@
-export type ChannelId = "world-explained" | "ai-blueprint" | "unfiltered-uncut" | "money-with-mo" | "hindi-lofi";
+// Was a fixed 5-way literal union; channels are now user-editable (add/rename/
+// delete in Settings), so any string is a valid id — the 5 built-in demo
+// channel ids are just the initial seed data, not a closed set anymore.
+export type ChannelId = string;
 
 export interface ChannelDef {
   id: ChannelId;

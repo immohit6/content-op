@@ -1,4 +1,4 @@
-import { getChannel } from "../data/channels";
+import { getChannel } from "../store/store";
 import { DailyPlan, DailyPlanItem, Video } from "../types";
 import { priorityRank } from "../store/store";
 import { todayIso, uid } from "../lib/utils";

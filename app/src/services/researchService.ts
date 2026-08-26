@@ -1,4 +1,4 @@
-import { getChannel } from "../data/channels";
+import { getChannel } from "../store/store";
 import { AISettings, ChannelDef, ResearchData, Video } from "../types";
 import { buildMockResearch } from "./ai/mockGen";
 import { withAI } from "./ai/provider";

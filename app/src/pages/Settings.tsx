@@ -1,11 +1,12 @@
 import React, { useRef, useState } from "react";
-import { useStore, ALL_CHANNELS } from "../store/store";
+import { useStore } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { Section } from "../components/common";
 import { AIProviderKind, ChannelId } from "../types";
 import { downloadJson, formatRelativeTime, todayIso } from "../lib/utils";
 import { toast } from "../store/uiStore";
 import { formatUSD, formatUSDPrecise, spendByFeature, spendInLast24h, spendToday } from "../lib/pricing";
+import { ManageChannelsSection } from "../components/ManageChannelsSection";
 
 const PROVIDER_LABEL: Record<AIProviderKind, string> = {
   mock: "Demo (no API key needed)",
@@ -21,6 +22,7 @@ const PROVIDER_MODEL_PLACEHOLDER: Record<AIProviderKind, string> = {
 
 export default function Settings() {
   const settings = useStore((s) => s.settings);
+  const channels = useStore((s) => s.channels);
   const updateSettings = useStore((s) => s.updateSettings);
   const exportData = useStore((s) => s.exportData);
   const importData = useStore((s) => s.importData);
@@ -151,7 +153,7 @@ export default function Settings() {
         <div className="card flex flex-col gap-4 px-5 py-5">
           <p className="text-xs text-base-400">
             Pulls real views, likes, and comments straight from YouTube for any video with a URL set — works across
-            all 5 channels, not just one. This is <span className="text-emerald-400">free</span>: the YouTube Data
+            all your channels, not just one. This is <span className="text-emerald-400">free</span>: the YouTube Data
             API's free daily quota is 10,000 units, and a stats lookup costs 1 unit each. CTR, average view
             duration, average % viewed, and subscribers gained aren't available via this public API (they require
             YouTube's private Analytics API with channel-owner OAuth), so those stay manual entry.
@@ -178,7 +180,7 @@ export default function Settings() {
               → "Import old videos". Optional — leave blank for channels you don't want to import from.
             </p>
             <div className="flex flex-col gap-2">
-              {ALL_CHANNELS.map((c) => (
+              {channels.map((c) => (
                 <div key={c.id} className="flex items-center gap-2">
                   <span className="w-32 shrink-0 truncate text-xs text-base-400">{c.name}</span>
                   <input
@@ -317,6 +319,8 @@ export default function Settings() {
         </div>
       </Section>
 
+      <ManageChannelsSection />
+
       <Section title="Defaults">
         <div className="card flex flex-col gap-4 px-5 py-5">
           <div>
@@ -326,7 +330,7 @@ export default function Settings() {
               value={settings.defaultChannelId}
               onChange={(e) => updateSettings({ defaultChannelId: e.target.value as ChannelId })}
             >
-              {ALL_CHANNELS.map((c) => (
+              {channels.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
