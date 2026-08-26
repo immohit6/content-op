@@ -3,9 +3,9 @@ import { useStore, ALL_CHANNELS } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { Section } from "../components/common";
 import { AIProviderKind, ChannelId } from "../types";
-import { downloadJson, todayIso } from "../lib/utils";
+import { downloadJson, formatRelativeTime, todayIso } from "../lib/utils";
 import { toast } from "../store/uiStore";
-import { formatUSD, formatUSDPrecise, spendInLast24h } from "../lib/pricing";
+import { formatUSD, formatUSDPrecise, spendByFeature, spendInLast24h, spendToday } from "../lib/pricing";
 
 const PROVIDER_LABEL: Record<AIProviderKind, string> = {
   mock: "Demo (no API key needed)",
@@ -27,9 +27,20 @@ export default function Settings() {
   const resetDemoData = useStore((s) => s.resetDemoData);
   const spend = useStore((s) => s.spend);
   const resetSpend = useStore((s) => s.resetSpend);
-  const spentLast24h = spendInLast24h(spend.entries);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+
+  // Spend updates in the store the instant a call is billed — this tick just
+  // keeps the "Xm ago" labels below counting up live while the page is open,
+  // rather than freezing at whatever they said on the render that logged them.
+  const [, forceTick] = useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const spentLast24h = spendInLast24h(spend.entries);
+  const spentTodayCalendar = spendToday(spend.entries);
+  const byFeature = spendByFeature(spend.entries);
 
   const [draftProvider, setDraftProvider] = useState<AIProviderKind>(settings.ai.provider);
   const [draftKey, setDraftKey] = useState(settings.ai.apiKey);
@@ -197,10 +208,14 @@ export default function Settings() {
             is blocked once your spend would cross the limit below. These are estimates based on typical response
             size, not your provider's exact bill — check your provider's dashboard for the authoritative number.
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <div className="text-xs font-medium text-base-400">Total spend</div>
               <div className="text-xl font-semibold text-base-100">{formatUSDPrecise(spend.totalUSD)}</div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-base-400">Today</div>
+              <div className="text-xl font-semibold text-base-100">{formatUSDPrecise(spentTodayCalendar)}</div>
             </div>
             <div>
               <div className="text-xs font-medium text-base-400">Last 24 hours</div>
@@ -208,8 +223,25 @@ export default function Settings() {
             </div>
           </div>
           <div className="text-xs text-base-400">
-            {spend.entries.length} billed AI call{spend.entries.length === 1 ? "" : "s"} total
+            {spend.entries.length} billed AI call{spend.entries.length === 1 ? "" : "s"} total · updates live as calls
+            happen, no refresh needed
           </div>
+
+          {byFeature.length > 0 && (
+            <div className="border-t border-base-700/60 pt-4">
+              <div className="label mb-2">By feature</div>
+              <div className="flex flex-col gap-1.5">
+                {byFeature.map((f) => (
+                  <div key={f.feature} className="flex items-center justify-between text-xs">
+                    <span className="text-base-300">
+                      {f.feature} <span className="text-base-500">· {f.count} call{f.count === 1 ? "" : "s"}</span>
+                    </span>
+                    <span className="text-base-400">{formatUSDPrecise(f.totalUSD)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Total budget limit</label>
@@ -266,11 +298,14 @@ export default function Settings() {
           {spend.entries.length > 0 && (
             <div className="border-t border-base-700/60 pt-4">
               <div className="label mb-2">Recent AI calls</div>
-              <div className="flex flex-col gap-1.5">
-                {spend.entries.slice(0, 5).map((e) => (
+              <div className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+                {spend.entries.slice(0, 20).map((e) => (
                   <div key={e.id} className="flex items-center justify-between text-xs">
                     <span className="text-base-300">
-                      {e.feature} <span className="text-base-500">· {e.provider === "anthropic" ? "Anthropic" : "OpenAI"}</span>
+                      {e.feature}{" "}
+                      <span className="text-base-500">
+                        · {e.provider === "anthropic" ? "Anthropic" : "OpenAI"} · {formatRelativeTime(e.timestamp)}
+                      </span>
                     </span>
                     <span className="text-base-400">{formatUSDPrecise(e.estCostUSD)}</span>
                   </div>
