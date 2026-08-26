@@ -1,4 +1,4 @@
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { AISettings, ChannelDef, ChannelId, Idea } from "../types";
 import { buildMockIdeas } from "./ai/mockGen";
 import { withAI } from "./ai/provider";
@@ -13,7 +13,7 @@ function buildPrompt(channel: ChannelDef, count: number): string {
 }
 
 export async function generateIdeas(channelId: ChannelId, count: number, settings: AISettings): Promise<Idea[]> {
-  const channel = CHANNEL_MAP[channelId];
+  const channel = getChannel(channelId);
   const mock = () => buildMockIdeas(channel, count);
   const prompt = buildPrompt(channel, count);
   const results = await withAI(settings, SYSTEM, prompt, mock);
@@ -25,7 +25,7 @@ export async function generateIdeas(channelId: ChannelId, count: number, setting
 }
 
 export function estimateIdeasCost(channelId: ChannelId, count: number, settings: AISettings): number {
-  const channel = CHANNEL_MAP[channelId];
+  const channel = getChannel(channelId);
   const prompt = SYSTEM + buildPrompt(channel, count);
   return estimateCostUSD(settings.provider, settings.model, prompt, EXPECTED_OUTPUT_TOKENS.ideaEach * count);
 }

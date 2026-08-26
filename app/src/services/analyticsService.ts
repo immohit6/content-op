@@ -1,4 +1,4 @@
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { AIAnalysis, AISettings, ChannelDef, Video } from "../types";
 import { buildMockAnalysis } from "./ai/mockGen";
 import { withAI } from "./ai/provider";
@@ -12,7 +12,7 @@ function buildPrompt(video: Video, channel: ChannelDef): string {
 }
 
 export async function analyzePerformance(video: Video, settings: AISettings): Promise<AIAnalysis> {
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
   const mock = () => buildMockAnalysis(video, channel);
   const prompt = buildPrompt(video, channel);
   const result = await withAI(settings, SYSTEM, prompt, mock);
@@ -20,7 +20,7 @@ export async function analyzePerformance(video: Video, settings: AISettings): Pr
 }
 
 export function estimateAnalysisCost(video: Video, settings: AISettings): number {
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
   const prompt = SYSTEM + buildPrompt(video, channel);
   return estimateCostUSD(settings.provider, settings.model, prompt, EXPECTED_OUTPUT_TOKENS.analysis);
 }

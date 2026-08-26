@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, StatCard } from "../components/common";
 import { formatShortDate } from "../lib/utils";
@@ -182,7 +182,7 @@ export default function AnalyticsPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {published.map((v) => {
-            const channel = CHANNEL_MAP[v.channelId];
+            const channel = getChannel(v.channelId);
             const isExpanded = expanded === v.id;
             const canSync = !!extractVideoId(v.videoUrl ?? "");
             return (

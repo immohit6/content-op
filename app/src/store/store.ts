@@ -57,6 +57,24 @@ export interface StoreShape {
   resetDemoData: () => void;
 }
 
+// Early builds of the demo seed data (before analytics was wired to the real
+// YouTube API) shipped made-up view/like/CTR numbers and placeholder video
+// URLs like "https://youtube.com/watch?v=demo-taiwan-shield" so the
+// Analytics page had something to show. Those numbers got saved into
+// anyone's browser who loaded the app before the seed was cleaned up, and
+// fixing the seed source doesn't retroactively touch data already sitting
+// in localStorage. Strip them once on hydration: a "demo-…" video id is not
+// a real YouTube video id (those are 11 opaque characters), so it's a safe,
+// unambiguous marker for "this was fake seed data," never a real synced or
+// manually-entered metric.
+function stripLeftoverDemoMetrics(videos: Video[]): Video[] {
+  return videos.map((v) => {
+    if (!v.videoUrl || !/[?&]v=demo-/.test(v.videoUrl)) return v;
+    const { videoUrl, metrics, ...rest } = v;
+    return { ...rest, metrics: null };
+  });
+}
+
 export const useStore = create<StoreShape>()(
   persist(
     (set, get) => ({
@@ -233,6 +251,7 @@ export const useStore = create<StoreShape>()(
         return {
           ...currentState,
           ...persisted,
+          videos: persisted.videos ? stripLeftoverDemoMetrics(persisted.videos) : currentState.videos,
           settings: {
             ...currentState.settings,
             ...persistedSettings,

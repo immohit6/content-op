@@ -1,4 +1,4 @@
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { DailyPlan, DailyPlanItem, Video } from "../types";
 import { priorityRank } from "../store/store";
 import { todayIso, uid } from "../lib/utils";
@@ -18,7 +18,7 @@ export function buildDailyPlan(videos: Video[]): DailyPlan {
   });
 
   const items: DailyPlanItem[] = sorted.slice(0, 6).map((v) => {
-    const channel = CHANNEL_MAP[v.channelId];
+    const channel = getChannel(v.channelId);
     return {
       id: uid("plan"),
       videoId: v.id,
