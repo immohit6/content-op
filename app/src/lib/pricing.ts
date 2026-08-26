@@ -77,6 +77,35 @@ export function spendInLast24h(entries: SpendEntry[]): number {
   return entries.reduce((sum, e) => (new Date(e.timestamp).getTime() >= cutoff ? sum + e.estCostUSD : sum), 0);
 }
 
+/** Sum of estimated cost for entries since local midnight (calendar day, not a rolling window). */
+export function spendToday(entries: SpendEntry[]): number {
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const cutoff = midnight.getTime();
+  return entries.reduce((sum, e) => (new Date(e.timestamp).getTime() >= cutoff ? sum + e.estCostUSD : sum), 0);
+}
+
+export interface FeatureSpend {
+  feature: string;
+  totalUSD: number;
+  count: number;
+}
+
+/** Groups spend entries by feature (e.g. "Research", "Script"), highest spend first. */
+export function spendByFeature(entries: SpendEntry[]): FeatureSpend[] {
+  const map = new Map<string, FeatureSpend>();
+  for (const e of entries) {
+    const existing = map.get(e.feature);
+    if (existing) {
+      existing.totalUSD += e.estCostUSD;
+      existing.count += 1;
+    } else {
+      map.set(e.feature, { feature: e.feature, totalUSD: e.estCostUSD, count: 1 });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.totalUSD - a.totalUSD);
+}
+
 export function formatUSD(n: number): string {
   if (n <= 0) return "Free";
   if (n < 0.01) return "<$0.01";
