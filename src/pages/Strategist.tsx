@@ -6,6 +6,7 @@ import { PageHeader } from "../components/layout";
 import { ChannelPill, EmptyState, ScoreBadge } from "../components/common";
 import { recommendNextVideos } from "../services/strategyService";
 import { StrategyRecommendation } from "../types";
+import { toast } from "../store/uiStore";
 
 export default function Strategist() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ export default function Strategist() {
       nextActionMinutes: 30,
       notes: `Angle: ${rec.angle}\n\nWhy this video: ${rec.reason}`,
     });
+    toast(`Video created: "${v.title}"`, "success");
     navigate(`/video/${v.id}`);
   }
 

@@ -9,6 +9,7 @@ import { generateResearch } from "../services/researchService";
 import { generateScript } from "../services/scriptService";
 import { generatePackaging } from "../services/packagingService";
 import { analyzePerformance } from "../services/analyticsService";
+import { toast } from "../store/uiStore";
 
 const TABS = ["Overview", "Research", "Script", "Packaging", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
@@ -58,6 +59,7 @@ export default function VideoWorkspace() {
     try {
       const research = await generateResearch(video!, aiSettings);
       updateVideo(video!.id, { research });
+      toast("Research generated", "success");
     } finally {
       setLoading(null);
     }
@@ -68,6 +70,7 @@ export default function VideoWorkspace() {
     try {
       const script = await generateScript(video!, aiSettings);
       updateVideo(video!.id, { script });
+      toast("Script generated", "success");
     } finally {
       setLoading(null);
     }
@@ -78,6 +81,7 @@ export default function VideoWorkspace() {
     try {
       const packaging = await generatePackaging(video!, aiSettings);
       updateVideo(video!.id, { packaging });
+      toast("Packaging generated", "success");
     } finally {
       setLoading(null);
     }
@@ -88,6 +92,7 @@ export default function VideoWorkspace() {
     try {
       const aiAnalysis = await analyzePerformance(video!, aiSettings);
       updateVideo(video!.id, { aiAnalysis });
+      toast("Performance analysis ready", "success");
     } finally {
       setLoading(null);
     }
@@ -95,8 +100,11 @@ export default function VideoWorkspace() {
 
   function onDelete() {
     if (confirm(`Delete "${video!.title}"? This can't be undone.`)) {
+      const title = video!.title;
+      const channelId = video!.channelId;
       deleteVideo(video!.id);
-      navigate(`/channel/${video!.channelId}`);
+      toast(`Deleted "${title}"`);
+      navigate(`/channel/${channelId}`);
     }
   }
 

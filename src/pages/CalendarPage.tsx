@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStore } from "../store/store";
+import { useStore, ALL_CHANNELS } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
-import { StageBadge } from "../components/common";
-import { cx, monthLabel, todayIso } from "../lib/utils";
-import { Video } from "../types";
+import { Modal } from "../components/common";
+import { cx, formatDate, monthLabel, todayIso } from "../lib/utils";
+import { ChannelId, Priority, Video } from "../types";
+import { toast } from "../store/uiStore";
 
 function toIso(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -23,9 +24,38 @@ export default function CalendarPage() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
   const updateVideo = useStore((s) => s.updateVideo);
+  const addVideo = useStore((s) => s.addVideo);
+  const defaultChannelId = useStore((s) => s.settings.defaultChannelId);
   const [mode, setMode] = useState<"month" | "week">("month");
   const [anchor, setAnchor] = useState(new Date());
   const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const [newDate, setNewDate] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newChannel, setNewChannel] = useState<ChannelId>(defaultChannelId);
+  const [newPriority, setNewPriority] = useState<Priority>("medium");
+
+  function openNewVideo(iso: string) {
+    setNewChannel(defaultChannelId);
+    setNewTitle("");
+    setNewPriority("medium");
+    setNewDate(iso);
+  }
+
+  function createVideoOnDate() {
+    if (!newTitle.trim() || !newDate) return;
+    const v = addVideo({
+      channelId: newChannel,
+      title: newTitle.trim(),
+      priority: newPriority,
+      targetPublishDate: newDate,
+      nextAction: "Kick off research for this video",
+      nextActionMinutes: 30,
+    });
+    toast(`Video created: "${v.title}"`, "success");
+    setNewDate(null);
+    navigate(`/video/${v.id}`);
+  }
 
   const byDate = useMemo(() => {
     const map: Record<string, Video[]> = {};
@@ -38,7 +68,11 @@ export default function CalendarPage() {
   function handleDrop(e: React.DragEvent, iso: string) {
     e.preventDefault();
     const videoId = e.dataTransfer.getData("text/plain");
-    if (videoId) updateVideo(videoId, { targetPublishDate: iso });
+    if (videoId) {
+      const v = videos.find((x) => x.id === videoId);
+      updateVideo(videoId, { targetPublishDate: iso });
+      if (v) toast(`Moved "${v.title}" to ${formatDate(iso)}`, "success");
+    }
     setDragOverDay(null);
   }
 
@@ -54,14 +88,19 @@ export default function CalendarPage() {
         }}
         onDragLeave={() => setDragOverDay((d) => (d === iso ? null : d))}
         onDrop={(e) => handleDrop(e, iso)}
+        onClick={() => openNewVideo(iso)}
         className={cx(
-          "flex min-h-[110px] flex-col gap-1 rounded-lg border p-1.5",
+          "group flex min-h-[110px] cursor-pointer flex-col gap-1 rounded-lg border p-1.5 transition-colors hover:border-accent/40",
           muted ? "border-base-800 bg-base-900/30" : "border-base-700/50 bg-base-900/60",
           dragOverDay === iso && "border-accent bg-accent/10"
         )}
+        title="Click to add a video on this day"
       >
-        <div className={cx("text-xs", isToday ? "font-bold text-accent-soft" : muted ? "text-base-600" : "text-base-400")}>
-          {date.getDate()}
+        <div className="flex items-center justify-between">
+          <span className={cx("text-xs", isToday ? "font-bold text-accent-soft" : muted ? "text-base-600" : "text-base-400")}>
+            {date.getDate()}
+          </span>
+          <span className="text-xs text-base-500 opacity-0 transition-opacity group-hover:opacity-100">+</span>
         </div>
         <div className="flex flex-col gap-1 overflow-y-auto">
           {items.map((v) => {
@@ -71,7 +110,10 @@ export default function CalendarPage() {
                 key={v.id}
                 draggable
                 onDragStart={(e) => e.dataTransfer.setData("text/plain", v.id)}
-                onClick={() => navigate(`/video/${v.id}`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/video/${v.id}`);
+                }}
                 className="cursor-pointer truncate rounded px-1.5 py-1 text-[11px] font-medium text-white"
                 style={{ backgroundColor: `${channel.color}cc` }}
                 title={v.title}
@@ -178,8 +220,53 @@ export default function CalendarPage() {
       )}
 
       <div className="card px-4 py-3 text-xs text-base-400">
-        Tip: drag any video card onto a different day to change its target publish date. Click a video to open its workspace.
+        Tip: click any day to add a video there, or drag an existing video card onto a different day to reschedule it.
       </div>
+
+      <Modal open={!!newDate} onClose={() => setNewDate(null)} title={newDate ? `New video · ${formatDate(newDate)}` : "New video"}>
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="label">Title</label>
+            <input
+              className="input mt-1"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Video title"
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && createVideoOnDate()}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Channel</label>
+              <select className="input mt-1" value={newChannel} onChange={(e) => setNewChannel(e.target.value as ChannelId)}>
+                {ALL_CHANNELS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Priority</label>
+              <select className="input mt-1" value={newPriority} onChange={(e) => setNewPriority(e.target.value as Priority)}>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-2 flex justify-end gap-2">
+            <button className="btn-secondary" onClick={() => setNewDate(null)}>
+              Cancel
+            </button>
+            <button className="btn-primary" onClick={createVideoOnDate} disabled={!newTitle.trim()}>
+              Create video
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

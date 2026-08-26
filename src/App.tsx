@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Shell } from "./components/layout";
+import { Toaster } from "./components/Toaster";
+import { QuickAdd } from "./components/QuickAdd";
 import { useStore } from "./store/store";
 import Dashboard from "./pages/Dashboard";
 import ChannelPage from "./pages/ChannelPage";
@@ -37,6 +39,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Shell>
+      <QuickAdd />
+      <Toaster />
     </HashRouter>
   );
 }

@@ -6,6 +6,7 @@ import { PageHeader } from "../components/layout";
 import { ChannelPill, EmptyState, StatCard } from "../components/common";
 import { formatShortDate } from "../lib/utils";
 import { analyzePerformance } from "../services/analyticsService";
+import { toast } from "../store/uiStore";
 
 const METRIC_FIELDS = [
   ["views", "Views"],
@@ -48,6 +49,7 @@ export default function AnalyticsPage() {
     try {
       const aiAnalysis = await analyzePerformance(video, aiSettings);
       updateVideo(videoId, { aiAnalysis });
+      toast("Performance analysis ready", "success");
       setExpanded(videoId);
     } finally {
       setLoadingId(null);

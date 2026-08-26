@@ -7,6 +7,7 @@ import { ChannelPill, EmptyState, Modal, PriorityBadge, ScoreBadge } from "../co
 import { ChannelId, Idea, IdeaStatus, Priority } from "../types";
 import { formatShortDate, todayIso } from "../lib/utils";
 import { generateIdeas } from "../services/ideaService";
+import { toast } from "../store/uiStore";
 
 type SortKey = "newest" | "ctr" | "retention" | "combined";
 
@@ -66,6 +67,7 @@ export default function IdeaBank() {
       const newIdeas = await generateIdeas(genChannel, genCount, aiSettings);
       addIdeasBulk(newIdeas);
       setShowGenerate(false);
+      toast(`${newIdeas.length} ideas added for ${CHANNEL_MAP[genChannel].name}`, "success");
     } finally {
       setGenerating(false);
     }
@@ -86,11 +88,20 @@ export default function IdeaBank() {
     });
     setShowAdd(false);
     setForm({ channelId: defaultChannelId, topic: "", proposedTitle: "", hook: "", angle: "", priority: "medium" });
+    toast(`Idea added: "${form.proposedTitle}"`, "success");
   }
 
   function handlePromote(idea: Idea) {
     const v = promoteIdeaToVideo(idea.id);
-    if (v) navigate(`/video/${v.id}`);
+    if (v) {
+      toast(`Promoted to video: "${v.title}"`, "success");
+      navigate(`/video/${v.id}`);
+    }
+  }
+
+  function handleDelete(idea: Idea) {
+    deleteIdea(idea.id);
+    toast(`Idea deleted`);
   }
 
   return (
@@ -167,7 +178,7 @@ export default function IdeaBank() {
                     ))}
                   </select>
                   <div className="flex items-center gap-1">
-                    <button className="btn-ghost !px-2 !py-1 text-[11px]" onClick={() => deleteIdea(idea.id)}>
+                    <button className="btn-ghost !px-2 !py-1 text-[11px]" onClick={() => handleDelete(idea)}>
                       Delete
                     </button>
                     <button

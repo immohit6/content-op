@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cx } from "../lib/utils";
 import { ALL_CHANNELS } from "../store/store";
+import { useUIStore } from "../store/uiStore";
 
 function Icon({ d, className }: { d: string; className?: string }) {
   return (
@@ -41,14 +42,19 @@ function navClass({ isActive }: { isActive: boolean }) {
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-base-700/60 bg-base-950 px-3 py-4 lg:flex">
-      <button onClick={() => navigate("/")} className="mb-6 flex items-center gap-2 px-2 text-left">
+      <button onClick={() => navigate("/")} className="mb-4 flex items-center gap-2 px-2 text-left">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">C</div>
         <div>
           <div className="text-sm font-semibold text-base-100 leading-none">Content OS</div>
           <div className="text-[11px] text-base-400 leading-none mt-0.5">your content command centre</div>
         </div>
+      </button>
+
+      <button onClick={openQuickAdd} className="btn-primary mb-4 w-full justify-center">
+        + Quick add
       </button>
 
       <nav className="flex flex-col gap-0.5">
@@ -89,9 +95,18 @@ const MOBILE_NAV = [
 ];
 
 export function MobileNav() {
+  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-base-700/60 bg-base-950/95 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)]">
-      {MOBILE_NAV.map((item) => (
+    <>
+      <button
+        onClick={openQuickAdd}
+        className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-2xl font-light text-white shadow-lg lg:hidden"
+        aria-label="Quick add"
+      >
+        +
+      </button>
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-base-700/60 bg-base-950/95 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)]">
+        {MOBILE_NAV.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -103,11 +118,12 @@ export function MobileNav() {
             )
           }
         >
-          <Icon d={item.icon} className="h-5 w-5" />
-          {item.label}
-        </NavLink>
-      ))}
-    </nav>
+            <Icon d={item.icon} className="h-5 w-5" />
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    </>
   );
 }
 

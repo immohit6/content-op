@@ -4,6 +4,7 @@ import { PageHeader } from "../components/layout";
 import { Section } from "../components/common";
 import { AIProviderKind, ChannelId } from "../types";
 import { downloadJson } from "../lib/utils";
+import { toast } from "../store/uiStore";
 
 const PROVIDER_LABEL: Record<AIProviderKind, string> = {
   mock: "Demo (no API key needed)",
@@ -28,6 +29,7 @@ export default function Settings() {
 
   function handleExport() {
     downloadJson(`content-os-export-${new Date().toISOString().slice(0, 10)}.json`, exportData());
+    toast("Export downloaded", "success");
   }
 
   function handleImportClick() {
@@ -187,7 +189,10 @@ export default function Settings() {
             <button
               className="btn-ghost !text-red-400"
               onClick={() => {
-                if (confirm("This replaces all current videos and ideas with the demo data. Continue?")) resetDemoData();
+                if (confirm("This replaces all current videos and ideas with the demo data. Continue?")) {
+                  resetDemoData();
+                  toast("Demo data restored", "success");
+                }
               }}
             >
               Reset

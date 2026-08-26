@@ -7,6 +7,7 @@ import { EmptyState, Modal, NextActionBanner, PriorityBadge, StageBadge, StatCar
 import { PRODUCTION_STAGES } from "../lib/pipeline";
 import { formatShortDate, todayIso } from "../lib/utils";
 import { ChannelId, Priority, Stage } from "../types";
+import { toast } from "../store/uiStore";
 
 export default function ChannelPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +53,7 @@ export default function ChannelPage() {
     });
     setShowNew(false);
     setTitle("");
+    toast(`Video created: "${v.title}"`, "success");
     navigate(`/video/${v.id}`);
   }
 
