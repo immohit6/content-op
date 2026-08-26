@@ -55,6 +55,7 @@ export interface StoreShape {
   exportData: () => { videos: Video[]; ideas: Idea[]; settings: AppSettings };
   importData: (data: { videos?: Video[]; ideas?: Idea[]; settings?: AppSettings }) => void;
   resetDemoData: () => void;
+  clearAllContent: () => void;
 }
 
 // Early builds of the demo seed data (before analytics was wired to the real
@@ -231,6 +232,10 @@ export const useStore = create<StoreShape>()(
 
       resetDemoData: () => {
         set({ videos: buildSeedVideos(), ideas: buildSeedIdeas(), dailyPlan: null });
+      },
+
+      clearAllContent: () => {
+        set({ videos: [], ideas: [], dailyPlan: null, spend: { totalUSD: 0, entries: [] } });
       },
     }),
     {
