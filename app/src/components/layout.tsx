@@ -44,7 +44,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-base-700/60 bg-base-950 px-3 py-4 lg:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-base-700/60 bg-base-950 px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
       <button onClick={() => navigate("/")} className="mb-4 flex items-center gap-2 px-2 text-left">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-sm font-bold text-white">C</div>
         <div>
