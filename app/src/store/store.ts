@@ -190,11 +190,25 @@ export const useStore = create<StoreShape>()(
       },
 
       importData: (data) => {
-        set((s) => ({
-          videos: data.videos ?? s.videos,
-          ideas: data.ideas ?? s.ideas,
-          settings: data.settings ? { ...s.settings, ...data.settings } : s.settings,
-        }));
+        set((s) => {
+          const imported = data.settings;
+          // exportData() intentionally blanks apiKey before writing a file (never export
+          // secrets), so a blank imported key means "was scrubbed on export", not "please
+          // clear my saved key" — keep the current key unless the import actually has one.
+          const settings = imported
+            ? {
+                ...s.settings,
+                ...imported,
+                ai: { ...s.settings.ai, ...imported.ai, apiKey: imported.ai?.apiKey || s.settings.ai.apiKey },
+                youtube: { ...s.settings.youtube, ...imported.youtube, apiKey: imported.youtube?.apiKey || s.settings.youtube.apiKey },
+              }
+            : s.settings;
+          return {
+            videos: data.videos ?? s.videos,
+            ideas: data.ideas ?? s.ideas,
+            settings,
+          };
+        });
       },
 
       resetDemoData: () => {
