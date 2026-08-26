@@ -74,6 +74,13 @@ export function parseJsonLoose<T>(text: string): T | null {
   }
 }
 
+// Note: if the request never completes (network error, bad key, timeout —
+// caught below) we silently fall back to mock, and the caller still logs an
+// estimated spend since it can't distinguish that from "the response just
+// didn't parse as JSON" (which *is* billed). This only over-counts spend in
+// the genuine-failure case, which the confirm-before-call dialog already
+// covers with an explicit "approximately" cost — a known, accepted gap in
+// an estimate that's approximate everywhere else too.
 export async function withAI<T>(settings: AISettings, system: string, prompt: string, mock: () => T): Promise<T> {
   if (settings.provider === "mock" || !settings.apiKey) return mock();
   try {

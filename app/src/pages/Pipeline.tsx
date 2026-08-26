@@ -70,7 +70,7 @@ export default function Pipeline() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <PageHeader title="Pipeline" subtitle="Drag a video between stages to move it forward." />
 
       <div className="flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ export default function Pipeline() {
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={cx(
-                    "flex w-64 shrink-0 flex-col rounded-xl border border-base-700/50 bg-base-900/40 p-2",
+                    "flex w-64 shrink-0 flex-col self-start rounded-xl border border-base-700/50 bg-base-900/40 p-2",
                     snapshot.isDraggingOver && "bg-accent/5 border-accent/40"
                   )}
                 >
@@ -120,7 +120,7 @@ export default function Pipeline() {
                       {byStage[stage].length}
                     </span>
                   </div>
-                  <div className="min-h-[60px] flex-1">
+                  <div className="min-h-[60px]">
                     {byStage[stage].map((v, i) => (
                       <VideoCard key={v.id} video={v} index={i} onClick={() => navigate(`/video/${v.id}`)} />
                     ))}

@@ -3,32 +3,44 @@ import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
-import { ChannelPill, EmptyState, ScoreBadge } from "../components/common";
-import { recommendNextVideos } from "../services/strategyService";
+import { ChannelPill, CostHint, EmptyState, ScoreBadge } from "../components/common";
+import { recommendNextVideos, estimateStrategyCost } from "../services/strategyService";
 import { StrategyRecommendation } from "../types";
 import { toast } from "../store/uiStore";
+import { formatUSD, isRealProvider } from "../lib/pricing";
+import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
 
 export default function Strategist() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
   const ideas = useStore((s) => s.ideas);
   const addVideo = useStore((s) => s.addVideo);
-  const aiSettings = useStore((s) => s.settings.ai);
+  const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
   const [recs, setRecs] = useState<StrategyRecommendation[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasRun, setHasRun] = useState(false);
+
+  const est = estimateStrategyCost(ALL_CHANNELS, videos, ideas, aiSettings);
+  const usesRealProvider = isRealProvider(aiSettings.provider, aiSettings.apiKey);
 
   async function refresh() {
+    if (!confirmSpend(est, "Generate recommendations")) return;
     setLoading(true);
     try {
       const result = await recommendNextVideos(ALL_CHANNELS, videos, ideas, aiSettings);
       setRecs(result);
+      setHasRun(true);
+      logSpend("Strategy", est);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    refresh();
+    // Demo mode is free, so keep the page instantly useful on load. A real
+    // provider costs money per call, so require an explicit click instead of
+    // silently spending the moment this page is opened.
+    if (!usesRealProvider) refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -52,14 +64,30 @@ export default function Strategist() {
         title="AI Strategist"
         subtitle="What should I make next? Recommendations based on channel balance, gaps, and performance."
         action={
-          <button className="btn-primary" onClick={refresh} disabled={loading}>
-            {loading ? "Thinking…" : "↻ Refresh recommendations"}
-          </button>
+          <div className="flex items-center gap-2">
+            <CostHint costUSD={est} />
+            <button className="btn-primary" onClick={refresh} disabled={loading}>
+              {loading ? "Thinking…" : hasRun ? "↻ Refresh recommendations" : "Generate recommendations"}
+            </button>
+          </div>
         }
       />
 
       {!recs || recs.length === 0 ? (
-        <EmptyState title={loading ? "Analyzing your content database…" : "No recommendations yet"} />
+        <EmptyState
+          title={
+            loading
+              ? "Analyzing your content database…"
+              : usesRealProvider && !hasRun
+              ? "Ready when you are"
+              : "No recommendations yet"
+          }
+          body={
+            usesRealProvider && !hasRun && !loading
+              ? `This calls ${aiSettings.provider === "anthropic" ? "Anthropic" : "OpenAI"} and costs ~${formatUSD(est)}. Click "Generate recommendations" above when you're ready.`
+              : undefined
+          }
+        />
       ) : (
         <div className="flex flex-col gap-4">
           {recs.map((rec, i) => {

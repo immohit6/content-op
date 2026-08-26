@@ -9,6 +9,7 @@ import {
   Idea,
   IdeaStatus,
   Priority,
+  SpendEntry,
   Stage,
   Video,
 } from "../types";
@@ -16,9 +17,12 @@ import { todayIso, uid } from "../lib/utils";
 
 const DEFAULT_SETTINGS: AppSettings = {
   ai: { provider: "mock", apiKey: "", model: "" },
+  youtube: { apiKey: "" },
   defaultChannelId: "world-explained",
   defaultPublishFrequency: 1,
   theme: "dark",
+  budgetLimitUSD: 2.0,
+  dailyBudgetLimitUSD: 1.0,
 };
 
 export interface StoreShape {
@@ -26,6 +30,7 @@ export interface StoreShape {
   ideas: Idea[];
   settings: AppSettings;
   dailyPlan: DailyPlan | null;
+  spend: { totalUSD: number; entries: SpendEntry[] };
 
   addVideo: (partial: Partial<Video> & { channelId: ChannelId; title: string }) => Video;
   updateVideo: (id: string, patch: Partial<Video>) => void;
@@ -40,6 +45,9 @@ export interface StoreShape {
   promoteIdeaToVideo: (id: string) => Video | null;
 
   updateSettings: (patch: Partial<AppSettings>) => void;
+
+  recordSpend: (entry: Omit<SpendEntry, "id" | "timestamp">) => void;
+  resetSpend: () => void;
 
   setDailyPlan: (plan: DailyPlan) => void;
   toggleDailyItem: (itemId: string) => void;
@@ -56,6 +64,7 @@ export const useStore = create<StoreShape>()(
       ideas: buildSeedIdeas(),
       settings: DEFAULT_SETTINGS,
       dailyPlan: null,
+      spend: { totalUSD: 0, entries: [] },
 
       addVideo: (partial) => {
         const now = new Date().toISOString();
@@ -136,8 +145,26 @@ export const useStore = create<StoreShape>()(
       },
 
       updateSettings: (patch) => {
-        set((s) => ({ settings: { ...s.settings, ...patch, ai: { ...s.settings.ai, ...(patch.ai ?? {}) } } }));
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            ...patch,
+            ai: { ...s.settings.ai, ...(patch.ai ?? {}) },
+            youtube: { ...s.settings.youtube, ...(patch.youtube ?? {}) },
+          },
+        }));
       },
+
+      recordSpend: (entry) => {
+        set((s) => ({
+          spend: {
+            totalUSD: s.spend.totalUSD + entry.estCostUSD,
+            entries: [{ ...entry, id: uid("spend"), timestamp: new Date().toISOString() }, ...s.spend.entries].slice(0, 200),
+          },
+        }));
+      },
+
+      resetSpend: () => set({ spend: { totalUSD: 0, entries: [] } }),
 
       setDailyPlan: (plan) => set({ dailyPlan: plan }),
 
@@ -155,7 +182,11 @@ export const useStore = create<StoreShape>()(
 
       exportData: () => {
         const { videos, ideas, settings } = get();
-        return { videos, ideas, settings: { ...settings, ai: { ...settings.ai, apiKey: "" } } };
+        return {
+          videos,
+          ideas,
+          settings: { ...settings, ai: { ...settings.ai, apiKey: "" }, youtube: { ...settings.youtube, apiKey: "" } },
+        };
       },
 
       importData: (data) => {
@@ -172,7 +203,7 @@ export const useStore = create<StoreShape>()(
     }),
     {
       name: "content-os-store",
-      partialize: (s) => ({ videos: s.videos, ideas: s.ideas, settings: s.settings, dailyPlan: s.dailyPlan }),
+      partialize: (s) => ({ videos: s.videos, ideas: s.ideas, settings: s.settings, dailyPlan: s.dailyPlan, spend: s.spend }),
     }
   )
 );

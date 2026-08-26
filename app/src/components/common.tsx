@@ -3,6 +3,13 @@ import { ChannelDef, PRIORITY_META, Priority, STAGE_LABELS, Stage } from "../typ
 import { cx } from "../lib/utils";
 import { channelTextColor } from "../lib/color";
 import { useStore } from "../store/store";
+import { formatUSD } from "../lib/pricing";
+
+/** Small "~$0.02 est." caption shown next to a real (non-mock) AI action. Renders nothing in demo mode. */
+export function CostHint({ costUSD }: { costUSD: number }) {
+  if (costUSD <= 0) return null;
+  return <span className="text-xs text-base-400">~{formatUSD(costUSD)} est.</span>;
+}
 
 export function PriorityDot({ priority, className }: { priority: Priority; className?: string }) {
   const meta = PRIORITY_META[priority];

@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
-import { ChannelPill, EmptyState, Modal, PriorityBadge, ScoreBadge } from "../components/common";
+import { ChannelPill, CostHint, EmptyState, Modal, PriorityBadge, ScoreBadge } from "../components/common";
 import { ChannelId, Idea, IdeaStatus, Priority } from "../types";
 import { formatShortDate, todayIso } from "../lib/utils";
-import { generateIdeas } from "../services/ideaService";
+import { generateIdeas, estimateIdeasCost } from "../services/ideaService";
 import { toast } from "../store/uiStore";
+import { formatUSD } from "../lib/pricing";
+import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
 
 type SortKey = "newest" | "ctr" | "retention" | "combined";
 
@@ -26,8 +28,8 @@ export default function IdeaBank() {
   const updateIdea = useStore((s) => s.updateIdea);
   const deleteIdea = useStore((s) => s.deleteIdea);
   const promoteIdeaToVideo = useStore((s) => s.promoteIdeaToVideo);
-  const aiSettings = useStore((s) => s.settings.ai);
   const defaultChannelId = useStore((s) => s.settings.defaultChannelId);
+  const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
 
   const [channelFilter, setChannelFilter] = useState<ChannelId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | "all">("all");
@@ -62,12 +64,15 @@ export default function IdeaBank() {
   }, [ideas, channelFilter, statusFilter, sortKey]);
 
   async function handleGenerate() {
+    const est = estimateIdeasCost(genChannel, genCount, aiSettings);
+    if (!confirmSpend(est, "Generate Ideas")) return;
     setGenerating(true);
     try {
       const newIdeas = await generateIdeas(genChannel, genCount, aiSettings);
       addIdeasBulk(newIdeas);
       setShowGenerate(false);
-      toast(`${newIdeas.length} ideas added for ${CHANNEL_MAP[genChannel].name}`, "success");
+      logSpend("Ideas", est);
+      toast(`${newIdeas.length} ideas added for ${CHANNEL_MAP[genChannel].name}${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setGenerating(false);
     }
@@ -223,7 +228,8 @@ export default function IdeaBank() {
           <p className="text-xs text-base-400">
             Ideas are generated specifically for {CHANNEL_MAP[genChannel].name}'s niche — {CHANNEL_MAP[genChannel].niche.join(", ")}.
           </p>
-          <div className="mt-2 flex justify-end gap-2">
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <CostHint costUSD={estimateIdeasCost(genChannel, genCount, aiSettings)} />
             <button className="btn-secondary" onClick={() => setShowGenerate(false)}>
               Cancel
             </button>
