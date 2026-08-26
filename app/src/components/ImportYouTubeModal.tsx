@@ -20,6 +20,8 @@ export function ImportYouTubeModal({ open, onClose }: { open: boolean; onClose: 
   const [uploadsPlaylistId, setUploadsPlaylistId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+  const [autoImporting, setAutoImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const existingVideoIds = new Set(videos.map((v) => v.videoUrl && extractVideoId(v.videoUrl)).filter(Boolean) as string[]);
 
@@ -80,39 +82,85 @@ export function ImportYouTubeModal({ open, onClose }: { open: boolean; onClose: 
     });
   }
 
+  /** Selects every currently-loaded upload that isn't already a Video record. Doesn't fetch more pages — pair with "Load more" first, or use Auto-import to grab everything in one go. */
+  function selectAll() {
+    setSelected(new Set(items.filter((i) => !existingVideoIds.has(i.videoId)).map((i) => i.videoId)));
+  }
+
+  async function importVideos(toImport: UploadedVideo[]): Promise<number> {
+    if (!channelId) return 0;
+    let ok = 0;
+    for (let i = 0; i < toImport.length; i++) {
+      const item = toImport[i];
+      setImportProgress({ done: i, total: toImport.length });
+      // eslint-disable-next-line no-await-in-loop
+      const v = addVideo({
+        channelId,
+        title: item.title,
+        stage: "analytics",
+        priority: "medium",
+        targetPublishDate: item.publishedAt.slice(0, 10),
+        nextAction: "Review analytics and log takeaways",
+        nextActionMinutes: 15,
+        videoUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
+        notes: "Imported from YouTube channel uploads.",
+      });
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const stats = await fetchLiveVideoStats(item.videoId, settings.youtube.apiKey);
+        updateVideo(v.id, { metrics: { ...stats, syncedAt: new Date().toISOString() } });
+      } catch {
+        // Import still counts even if the immediate stats pull fails — the
+        // video's own "Sync" button on Analytics can retry later.
+      }
+      ok++;
+    }
+    setImportProgress({ done: toImport.length, total: toImport.length });
+    return ok;
+  }
+
   async function importSelected() {
     if (!channelId || selected.size === 0) return;
     setImporting(true);
-    let ok = 0;
     try {
-      for (const item of items) {
-        if (!selected.has(item.videoId)) continue;
-        // eslint-disable-next-line no-await-in-loop
-        const v = addVideo({
-          channelId,
-          title: item.title,
-          stage: "analytics",
-          priority: "medium",
-          targetPublishDate: item.publishedAt.slice(0, 10),
-          nextAction: "Review analytics and log takeaways",
-          nextActionMinutes: 15,
-          videoUrl: `https://www.youtube.com/watch?v=${item.videoId}`,
-          notes: "Imported from YouTube channel uploads.",
-        });
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          const stats = await fetchLiveVideoStats(item.videoId, settings.youtube.apiKey);
-          updateVideo(v.id, { metrics: { ...stats, syncedAt: new Date().toISOString() } });
-        } catch {
-          // Import still counts even if the immediate stats pull fails — the
-          // video's own "Sync" button on Analytics can retry later.
-        }
-        ok++;
-      }
+      const toImport = items.filter((i) => selected.has(i.videoId));
+      const ok = await importVideos(toImport);
       toast(`Imported ${ok} video${ok === 1 ? "" : "s"} from YouTube`, "success");
       onClose();
     } finally {
       setImporting(false);
+      setImportProgress(null);
+    }
+  }
+
+  /** One click: pages through this channel's ENTIRE upload history, then imports everything not already added. */
+  async function autoImportAll() {
+    if (!channelId || !uploadsPlaylistId) return;
+    setAutoImporting(true);
+    try {
+      let allItems = items;
+      let token = nextPageToken;
+      while (token) {
+        // eslint-disable-next-line no-await-in-loop
+        const page = await fetchUploadsPage(uploadsPlaylistId, settings.youtube.apiKey, token);
+        allItems = [...allItems, ...page.items];
+        token = page.nextPageToken;
+        setItems(allItems);
+        setNextPageToken(token);
+      }
+      const toImport = allItems.filter((i) => !existingVideoIds.has(i.videoId));
+      if (toImport.length === 0) {
+        toast("Every upload from this channel is already imported.", "success");
+        return;
+      }
+      const ok = await importVideos(toImport);
+      toast(`Auto-imported ${ok} video${ok === 1 ? "" : "s"} from this channel`, "success");
+      onClose();
+    } catch (err) {
+      toast(err instanceof YouTubeApiError ? err.message : "Auto-import stopped partway through — whatever loaded is still listed, try again.", "error");
+    } finally {
+      setAutoImporting(false);
+      setImportProgress(null);
     }
   }
 
@@ -125,20 +173,37 @@ export function ImportYouTubeModal({ open, onClose }: { open: boolean; onClose: 
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            {linkedChannels.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => loadChannel(c.id)}
-                className={
-                  channelId === c.id
-                    ? "rounded-full bg-accent px-3 py-1 text-xs font-medium text-white"
-                    : "rounded-full bg-base-800 px-3 py-1 text-xs font-medium text-base-300 hover:bg-base-700"
-                }
-              >
-                {c.name}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {linkedChannels.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => loadChannel(c.id)}
+                  disabled={autoImporting || importing}
+                  className={
+                    channelId === c.id
+                      ? "rounded-full bg-accent px-3 py-1 text-xs font-medium text-white"
+                      : "rounded-full bg-base-800 px-3 py-1 text-xs font-medium text-base-300 hover:bg-base-700"
+                  }
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            {items.length > 0 && (
+              <div className="flex gap-2">
+                <button className="btn-secondary" onClick={selectAll} disabled={autoImporting || importing || loading}>
+                  Select all
+                </button>
+                <button className="btn-primary" onClick={autoImportAll} disabled={autoImporting || importing || loading} title="Loads every remaining page from this channel and imports everything not already added">
+                  {autoImporting
+                    ? importProgress
+                      ? `Importing ${importProgress.done}/${importProgress.total}…`
+                      : "Loading channel history…"
+                    : "⚡ Auto-import all"}
+                </button>
+              </div>
+            )}
           </div>
 
           {loading && items.length === 0 ? (
@@ -182,14 +247,16 @@ export function ImportYouTubeModal({ open, onClose }: { open: boolean; onClose: 
           )}
 
           {nextPageToken && (
-            <button className="btn-secondary self-center" onClick={loadMore} disabled={loading}>
+            <button className="btn-secondary self-center" onClick={loadMore} disabled={loading || autoImporting || importing}>
               {loading ? "Loading…" : "Load more"}
             </button>
           )}
 
           <div className="flex items-center justify-between border-t border-base-700/60 pt-4">
-            <span className="text-xs text-base-500">{selected.size} selected</span>
-            <button className="btn-primary" onClick={importSelected} disabled={selected.size === 0 || importing}>
+            <span className="text-xs text-base-500">
+              {importing && importProgress ? `Importing ${importProgress.done}/${importProgress.total}…` : `${selected.size} selected`}
+            </span>
+            <button className="btn-secondary" onClick={importSelected} disabled={selected.size === 0 || importing || autoImporting}>
               {importing ? "Importing…" : `Import selected (${selected.size})`}
             </button>
           </div>
