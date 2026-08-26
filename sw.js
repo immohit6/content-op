@@ -1,4 +1,4 @@
-const CACHE = "content-ops-v1";
+const CACHE = "content-ops-v2";
 const ASSETS = ["./", "./index.html", "./app.js", "./tailwind.css", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
