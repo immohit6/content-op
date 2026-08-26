@@ -4,13 +4,11 @@ import { useStore, ALL_CHANNELS } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { Modal } from "../components/common";
-import { cx, formatDate, monthLabel, todayIso } from "../lib/utils";
+import { cx, formatDate, monthLabel, todayIso, toLocalIso } from "../lib/utils";
 import { ChannelId, Priority, Video } from "../types";
 import { toast } from "../store/uiStore";
 
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+const toIso = toLocalIso;
 
 function startOfWeek(d: Date): Date {
   const copy = new Date(d);

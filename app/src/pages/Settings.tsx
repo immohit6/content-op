@@ -3,7 +3,7 @@ import { useStore, ALL_CHANNELS } from "../store/store";
 import { PageHeader } from "../components/layout";
 import { Section } from "../components/common";
 import { AIProviderKind, ChannelId } from "../types";
-import { downloadJson } from "../lib/utils";
+import { downloadJson, todayIso } from "../lib/utils";
 import { toast } from "../store/uiStore";
 import { formatUSD, formatUSDPrecise, spendInLast24h } from "../lib/pricing";
 
@@ -50,7 +50,7 @@ export default function Settings() {
   }
 
   function handleExport() {
-    downloadJson(`content-os-export-${new Date().toISOString().slice(0, 10)}.json`, exportData());
+    downloadJson(`content-os-export-${todayIso()}.json`, exportData());
     toast("Export downloaded", "success");
   }
 

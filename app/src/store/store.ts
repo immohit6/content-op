@@ -190,11 +190,25 @@ export const useStore = create<StoreShape>()(
       },
 
       importData: (data) => {
-        set((s) => ({
-          videos: data.videos ?? s.videos,
-          ideas: data.ideas ?? s.ideas,
-          settings: data.settings ? { ...s.settings, ...data.settings } : s.settings,
-        }));
+        set((s) => {
+          const imported = data.settings;
+          // exportData() intentionally blanks apiKey before writing a file (never export
+          // secrets), so a blank imported key means "was scrubbed on export", not "please
+          // clear my saved key" — keep the current key unless the import actually has one.
+          const settings = imported
+            ? {
+                ...s.settings,
+                ...imported,
+                ai: { ...s.settings.ai, ...imported.ai, apiKey: imported.ai?.apiKey || s.settings.ai.apiKey },
+                youtube: { ...s.settings.youtube, ...imported.youtube, apiKey: imported.youtube?.apiKey || s.settings.youtube.apiKey },
+              }
+            : s.settings;
+          return {
+            videos: data.videos ?? s.videos,
+            ideas: data.ideas ?? s.ideas,
+            settings,
+          };
+        });
       },
 
       resetDemoData: () => {
@@ -204,6 +218,30 @@ export const useStore = create<StoreShape>()(
     {
       name: "content-os-store",
       partialize: (s) => ({ videos: s.videos, ideas: s.ideas, settings: s.settings, dailyPlan: s.dailyPlan, spend: s.spend }),
+      // Zustand's default merge is a shallow spread of persisted state over the
+      // fresh defaults — fine for top-level keys, but `settings` predating a
+      // newly-added field (e.g. `youtube`, added after some users already had
+      // data saved) would come back with that field simply missing, since the
+      // OLD persisted `settings` object replaces the new default wholesale.
+      // Every page that reads `settings.youtube.apiKey` etc. would then crash
+      // on `undefined.apiKey` — a blank page with no visible error. Deep-merge
+      // the nested settings objects instead so an old save always ends up with
+      // every current field, defaulted if it wasn't there before.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState as Partial<StoreShape> | undefined) ?? {};
+        const persistedSettings = persisted.settings ?? ({} as Partial<AppSettings>);
+        return {
+          ...currentState,
+          ...persisted,
+          settings: {
+            ...currentState.settings,
+            ...persistedSettings,
+            ai: { ...currentState.settings.ai, ...(persistedSettings.ai ?? {}) },
+            youtube: { ...currentState.settings.youtube, ...(persistedSettings.youtube ?? {}) },
+          },
+          spend: persisted.spend ?? currentState.spend,
+        };
+      },
     }
   )
 );
