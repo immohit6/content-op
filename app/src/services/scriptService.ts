@@ -1,4 +1,4 @@
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { AISettings, ChannelDef, ScriptData, Video } from "../types";
 import { buildMockScript } from "./ai/mockGen";
 import { withAI } from "./ai/provider";
@@ -13,7 +13,7 @@ function buildPrompt(video: Video, channel: ChannelDef): string {
 }
 
 export async function generateScript(video: Video, settings: AISettings): Promise<ScriptData> {
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
   const mock = () => buildMockScript(video, channel);
   const prompt = buildPrompt(video, channel);
   const result = await withAI(settings, SYSTEM, prompt, mock);
@@ -21,7 +21,7 @@ export async function generateScript(video: Video, settings: AISettings): Promis
 }
 
 export function estimateScriptCost(video: Video, settings: AISettings): number {
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
   const prompt = SYSTEM + buildPrompt(video, channel);
   return estimateCostUSD(settings.provider, settings.model, prompt, EXPECTED_OUTPUT_TOKENS.script);
 }

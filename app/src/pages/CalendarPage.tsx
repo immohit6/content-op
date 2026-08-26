@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { Modal } from "../components/common";
 import { cx, formatDate, monthLabel, todayIso, toLocalIso } from "../lib/utils";
@@ -102,7 +102,7 @@ export default function CalendarPage() {
         </div>
         <div className="flex flex-col gap-1 overflow-y-auto">
           {items.map((v) => {
-            const channel = CHANNEL_MAP[v.channelId];
+            const channel = getChannel(v.channelId);
             return (
               <div
                 key={v.id}

@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Shell } from "./components/layout";
 import { Toaster } from "./components/Toaster";
 import { QuickAdd } from "./components/QuickAdd";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useStore } from "./store/store";
 import { useUIStore } from "./store/uiStore";
 import Dashboard from "./pages/Dashboard";
@@ -44,22 +45,33 @@ export default function App() {
   return (
     <HashRouter>
       <Shell>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/today" element={<TodayWork />} />
-          <Route path="/pipeline" element={<Pipeline />} />
-          <Route path="/video/:id" element={<VideoWorkspace />} />
-          <Route path="/ideas" element={<IdeaBank />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/strategist" element={<Strategist />} />
-          <Route path="/channel/:id" element={<ChannelPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <RoutedContent />
       </Shell>
       <QuickAdd />
       <Toaster />
     </HashRouter>
+  );
+}
+
+function RoutedContent() {
+  const location = useLocation();
+  return (
+    // Keyed by path so navigating away from a crashed page always gets a
+    // fresh mount attempt, instead of staying stuck showing the error.
+    <ErrorBoundary key={location.pathname}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/today" element={<TodayWork />} />
+        <Route path="/pipeline" element={<Pipeline />} />
+        <Route path="/video/:id" element={<VideoWorkspace />} />
+        <Route path="/ideas" element={<IdeaBank />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/strategist" element={<Strategist />} />
+        <Route path="/channel/:id" element={<ChannelPage />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

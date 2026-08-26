@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, ScoreBadge } from "../components/common";
 import { recommendNextVideos, estimateStrategyCost } from "../services/strategyService";
@@ -91,7 +91,7 @@ export default function Strategist() {
       ) : (
         <div className="flex flex-col gap-4">
           {recs.map((rec, i) => {
-            const channel = CHANNEL_MAP[rec.channelId];
+            const channel = getChannel(rec.channelId);
             return (
               <div key={i} className="card px-5 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">

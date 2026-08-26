@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { CostHint, EmptyState, NextActionBanner, PriorityBadge, ScoreBadge, StageBadge } from "../components/common";
 import { STAGE_LABELS, STAGES, Priority, Stage } from "../types";
 import { cx } from "../lib/utils";
@@ -59,7 +59,7 @@ export default function VideoWorkspace() {
     );
   }
 
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
 
   async function runResearch() {
     const est = estimateResearchCost(video!, aiSettings);

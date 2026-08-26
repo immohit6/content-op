@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useStore, ALL_CHANNELS } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { PriorityDot } from "../components/common";
 import { STAGE_LABELS, STAGES, ChannelId, Video } from "../types";
@@ -11,7 +11,7 @@ import { cx } from "../lib/utils";
 import { channelTextColor } from "../lib/color";
 
 function VideoCard({ video, index, onClick }: { video: Video; index: number; onClick: () => void }) {
-  const channel = CHANNEL_MAP[video.channelId];
+  const channel = getChannel(video.channelId);
   const theme = useStore((s) => s.settings.theme);
   return (
     <Draggable draggableId={video.id} index={index}>
@@ -58,7 +58,11 @@ export default function Pipeline() {
   const byStage = useMemo(() => {
     const map: Record<string, Video[]> = {};
     for (const stage of STAGES) map[stage] = [];
-    for (const v of filtered) map[v.stage].push(v);
+    // A stage that isn't one of the current STAGES (imported JSON, an old
+    // removed stage name) has no column to land in — bucket it under "idea"
+    // instead of crashing the board, so the video stays visible and the
+    // user can just re-drag it to the right column.
+    for (const v of filtered) (map[v.stage] ?? map.idea).push(v);
     return map;
   }, [filtered]);
 

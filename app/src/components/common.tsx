@@ -11,13 +11,19 @@ export function CostHint({ costUSD }: { costUSD: number }) {
   return <span className="text-xs text-base-400">~{formatUSD(costUSD)} est.</span>;
 }
 
+// priority/stage normally come from this app's own typed code, but can also
+// arrive from imported JSON (no runtime validation) or a real AI response
+// that didn't quite follow the requested enum — fall back instead of
+// crashing every card/badge that renders one.
+const FALLBACK_PRIORITY_META = { label: "Unknown", dot: "bg-base-500", text: "text-base-400" };
+
 export function PriorityDot({ priority, className }: { priority: Priority; className?: string }) {
-  const meta = PRIORITY_META[priority];
+  const meta = PRIORITY_META[priority] ?? FALLBACK_PRIORITY_META;
   return <span className={cx("inline-block h-2.5 w-2.5 rounded-full shrink-0", meta.dot, className)} title={meta.label} />;
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
-  const meta = PRIORITY_META[priority];
+  const meta = PRIORITY_META[priority] ?? FALLBACK_PRIORITY_META;
   return (
     <span className={cx("inline-flex items-center gap-1.5 text-xs font-medium", meta.text)}>
       <PriorityDot priority={priority} />
@@ -29,7 +35,7 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 export function StageBadge({ stage }: { stage: Stage }) {
   return (
     <span className="inline-flex items-center rounded-md bg-base-800 border border-base-600 px-2 py-0.5 text-xs font-medium text-base-200">
-      {STAGE_LABELS[stage]}
+      {STAGE_LABELS[stage] ?? stage ?? "Unknown"}
     </span>
   );
 }
@@ -49,11 +55,12 @@ export function ChannelPill({ channel }: { channel: ChannelDef }) {
 }
 
 export function ScoreBadge({ label, value }: { label: string; value: number }) {
-  const color = value >= 8 ? "text-emerald-400" : value >= 6.5 ? "text-amber-300" : "text-base-300";
+  const safeValue = typeof value === "number" && Number.isFinite(value) ? value : null;
+  const color = safeValue === null ? "text-base-500" : safeValue >= 8 ? "text-emerald-400" : safeValue >= 6.5 ? "text-amber-300" : "text-base-300";
   return (
     <span className="inline-flex items-center gap-1 text-xs">
       <span className="text-base-400">{label}</span>
-      <span className={cx("font-semibold", color)}>{value.toFixed(1)}</span>
+      <span className={cx("font-semibold", color)}>{safeValue === null ? "—" : safeValue.toFixed(1)}</span>
     </span>
   );
 }

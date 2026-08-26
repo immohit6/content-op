@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
-import { CHANNEL_MAP } from "../data/channels";
+import { getChannel } from "../data/channels";
 import { PageHeader } from "../components/layout";
 import { ChannelPill, CostHint, EmptyState, Modal, PriorityBadge, ScoreBadge } from "../components/common";
 import { ChannelId, Idea, IdeaStatus, Priority } from "../types";
@@ -72,7 +72,7 @@ export default function IdeaBank() {
       addIdeasBulk(newIdeas);
       setShowGenerate(false);
       logSpend("Ideas", est);
-      toast(`${newIdeas.length} ideas added for ${CHANNEL_MAP[genChannel].name}${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
+      toast(`${newIdeas.length} ideas added for ${getChannel(genChannel).name}${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setGenerating(false);
     }
@@ -156,7 +156,7 @@ export default function IdeaBank() {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((idea) => {
-            const channel = CHANNEL_MAP[idea.channelId];
+            const channel = getChannel(idea.channelId);
             return (
               <div key={idea.id} className="card flex flex-col gap-2.5 px-4 py-4">
                 <div className="flex items-center justify-between gap-2">
@@ -226,7 +226,7 @@ export default function IdeaBank() {
             />
           </div>
           <p className="text-xs text-base-400">
-            Ideas are generated specifically for {CHANNEL_MAP[genChannel].name}'s niche — {CHANNEL_MAP[genChannel].niche.join(", ")}.
+            Ideas are generated specifically for {getChannel(genChannel).name}'s niche — {getChannel(genChannel).niche.join(", ")}.
           </p>
           <div className="mt-2 flex items-center justify-end gap-2">
             <CostHint costUSD={estimateIdeasCost(genChannel, genCount, aiSettings)} />
