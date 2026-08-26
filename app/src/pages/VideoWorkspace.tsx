@@ -13,6 +13,7 @@ import { toast } from "../store/uiStore";
 import { channelTextColor } from "../lib/color";
 import { formatUSD } from "../lib/pricing";
 import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
+import { extractVideoId, fetchLiveVideoStats, YouTubeApiError } from "../services/youtubeService";
 
 const TABS = ["Overview", "Research", "Script", "Packaging", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
@@ -38,8 +39,10 @@ export default function VideoWorkspace() {
   const updateVideo = useStore((s) => s.updateVideo);
   const deleteVideo = useStore((s) => s.deleteVideo);
   const theme = useStore((s) => s.settings.theme);
+  const youtubeApiKey = useStore((s) => s.settings.youtube.apiKey);
   const [tab, setTab] = useState<Tab>("Overview");
   const [loading, setLoading] = useState<string | null>(null);
+  const [syncingYoutube, setSyncingYoutube] = useState(false);
   const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
 
   if (!video) {
@@ -111,6 +114,26 @@ export default function VideoWorkspace() {
       toast(`Performance analysis ready${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setLoading(null);
+    }
+  }
+
+  async function runYoutubeSync() {
+    const videoId = extractVideoId(video!.videoUrl ?? "");
+    if (!videoId) {
+      toast("Add a valid YouTube video URL above first.", "error");
+      return;
+    }
+    setSyncingYoutube(true);
+    try {
+      const stats = await fetchLiveVideoStats(videoId, youtubeApiKey);
+      updateVideo(video!.id, {
+        metrics: { ...(video!.metrics ?? {}), ...stats, syncedAt: new Date().toISOString() },
+      });
+      toast(`Synced from YouTube: ${stats.views.toLocaleString()} views`, "success");
+    } catch (err) {
+      toast(err instanceof YouTubeApiError ? err.message : "Couldn't sync from YouTube.", "error");
+    } finally {
+      setSyncingYoutube(false);
     }
   }
 

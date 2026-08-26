@@ -41,6 +41,14 @@ export default function Settings() {
     toast("AI settings saved", "success");
   }
 
+  const [draftYoutubeKey, setDraftYoutubeKey] = useState(settings.youtube.apiKey);
+  const youtubeDirty = draftYoutubeKey !== settings.youtube.apiKey;
+
+  function saveYoutube() {
+    updateSettings({ youtube: { apiKey: draftYoutubeKey } });
+    toast("YouTube API key saved", "success");
+  }
+
   function handleExport() {
     downloadJson(`content-os-export-${new Date().toISOString().slice(0, 10)}.json`, exportData());
     toast("Export downloaded", "success");
@@ -119,6 +127,41 @@ export default function Settings() {
             </span>
             <button className="btn-primary" onClick={saveAI} disabled={!aiDirty}>
               Save AI settings
+            </button>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="YouTube">
+        <div className="card flex flex-col gap-4 px-5 py-5">
+          <p className="text-xs text-base-400">
+            Pulls real views, likes, and comments straight from YouTube for any video with a URL set — works across
+            all 5 channels, not just one. This is <span className="text-emerald-400">free</span>: the YouTube Data
+            API's free daily quota is 10,000 units, and a stats lookup costs 1 unit each. CTR, average view
+            duration, average % viewed, and subscribers gained aren't available via this public API (they require
+            YouTube's private Analytics API with channel-owner OAuth), so those stay manual entry.
+          </p>
+          <div>
+            <label className="label">YouTube Data API key</label>
+            <input
+              type="password"
+              className="input mt-1"
+              value={draftYoutubeKey}
+              onChange={(e) => setDraftYoutubeKey(e.target.value)}
+              placeholder="AIza…"
+              autoComplete="off"
+            />
+            <p className="mt-1 text-[11px] text-base-500">
+              Get one free at console.cloud.google.com → enable "YouTube Data API v3" → Credentials → API key. Stored
+              only in this browser, only applied once you hit Save.
+            </p>
+          </div>
+          <div className="flex items-center justify-between border-t border-base-700/60 pt-4">
+            <span className="text-xs text-base-500">
+              {youtubeDirty ? "Unsaved changes." : settings.youtube.apiKey ? "Saved and active." : "No key set — sync is unavailable until you add one."}
+            </span>
+            <button className="btn-primary" onClick={saveYoutube} disabled={!youtubeDirty}>
+              Save YouTube key
             </button>
           </div>
         </div>

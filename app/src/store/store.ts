@@ -17,6 +17,7 @@ import { todayIso, uid } from "../lib/utils";
 
 const DEFAULT_SETTINGS: AppSettings = {
   ai: { provider: "mock", apiKey: "", model: "" },
+  youtube: { apiKey: "" },
   defaultChannelId: "world-explained",
   defaultPublishFrequency: 1,
   theme: "dark",
@@ -144,7 +145,14 @@ export const useStore = create<StoreShape>()(
       },
 
       updateSettings: (patch) => {
-        set((s) => ({ settings: { ...s.settings, ...patch, ai: { ...s.settings.ai, ...(patch.ai ?? {}) } } }));
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            ...patch,
+            ai: { ...s.settings.ai, ...(patch.ai ?? {}) },
+            youtube: { ...s.settings.youtube, ...(patch.youtube ?? {}) },
+          },
+        }));
       },
 
       recordSpend: (entry) => {
@@ -174,7 +182,11 @@ export const useStore = create<StoreShape>()(
 
       exportData: () => {
         const { videos, ideas, settings } = get();
-        return { videos, ideas, settings: { ...settings, ai: { ...settings.ai, apiKey: "" } } };
+        return {
+          videos,
+          ideas,
+          settings: { ...settings, ai: { ...settings.ai, apiKey: "" }, youtube: { ...settings.youtube, apiKey: "" } },
+        };
       },
 
       importData: (data) => {

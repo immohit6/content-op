@@ -49,12 +49,14 @@ export const PRIORITY_META: Record<Priority, { label: string; dot: string; text:
 
 export interface PerformanceMetrics {
   views?: number;
-  ctr?: number; // percentage
-  avgViewDurationSec?: number;
-  avgPercentViewed?: number; // percentage
+  ctr?: number; // percentage — manual entry only, not exposed by the public YouTube Data API
+  avgViewDurationSec?: number; // manual entry only — requires YouTube Analytics API (OAuth)
+  avgPercentViewed?: number; // percentage — manual entry only, same reason
   likes?: number;
   comments?: number;
-  subscribersGained?: number;
+  subscribersGained?: number; // manual entry only, same reason
+  /** ISO timestamp of the last successful live sync from the YouTube Data API. Absent = never synced (manual only). */
+  syncedAt?: string;
 }
 
 export interface ScriptHook {
@@ -161,8 +163,13 @@ export interface AISettings {
   model: string;
 }
 
+export interface YouTubeSettings {
+  apiKey: string;
+}
+
 export interface AppSettings {
   ai: AISettings;
+  youtube: YouTubeSettings;
   defaultChannelId: ChannelId;
   defaultPublishFrequency: number;
   theme: "dark" | "light";
