@@ -218,6 +218,30 @@ export const useStore = create<StoreShape>()(
     {
       name: "content-os-store",
       partialize: (s) => ({ videos: s.videos, ideas: s.ideas, settings: s.settings, dailyPlan: s.dailyPlan, spend: s.spend }),
+      // Zustand's default merge is a shallow spread of persisted state over the
+      // fresh defaults — fine for top-level keys, but `settings` predating a
+      // newly-added field (e.g. `youtube`, added after some users already had
+      // data saved) would come back with that field simply missing, since the
+      // OLD persisted `settings` object replaces the new default wholesale.
+      // Every page that reads `settings.youtube.apiKey` etc. would then crash
+      // on `undefined.apiKey` — a blank page with no visible error. Deep-merge
+      // the nested settings objects instead so an old save always ends up with
+      // every current field, defaulted if it wasn't there before.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState as Partial<StoreShape> | undefined) ?? {};
+        const persistedSettings = persisted.settings ?? ({} as Partial<AppSettings>);
+        return {
+          ...currentState,
+          ...persisted,
+          settings: {
+            ...currentState.settings,
+            ...persistedSettings,
+            ai: { ...currentState.settings.ai, ...(persistedSettings.ai ?? {}) },
+            youtube: { ...currentState.settings.youtube, ...(persistedSettings.youtube ?? {}) },
+          },
+          spend: persisted.spend ?? currentState.spend,
+        };
+      },
     }
   )
 );
