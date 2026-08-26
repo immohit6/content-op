@@ -166,6 +166,17 @@ export interface AppSettings {
   defaultChannelId: ChannelId;
   defaultPublishFrequency: number;
   theme: "dark" | "light";
+  budgetLimitUSD: number;
+  dailyBudgetLimitUSD: number;
+}
+
+export interface SpendEntry {
+  id: string;
+  timestamp: string;
+  feature: string;
+  provider: AIProviderKind;
+  model: string;
+  estCostUSD: number;
 }
 
 export interface DailyPlanItem {

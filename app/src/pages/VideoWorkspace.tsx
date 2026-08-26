@@ -2,15 +2,17 @@ import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
-import { EmptyState, NextActionBanner, PriorityBadge, ScoreBadge, StageBadge } from "../components/common";
+import { CostHint, EmptyState, NextActionBanner, PriorityBadge, ScoreBadge, StageBadge } from "../components/common";
 import { STAGE_LABELS, STAGES, Priority, Stage } from "../types";
 import { cx } from "../lib/utils";
-import { generateResearch } from "../services/researchService";
-import { generateScript } from "../services/scriptService";
-import { generatePackaging } from "../services/packagingService";
-import { analyzePerformance } from "../services/analyticsService";
+import { generateResearch, estimateResearchCost } from "../services/researchService";
+import { generateScript, estimateScriptCost } from "../services/scriptService";
+import { generatePackaging, estimatePackagingCost } from "../services/packagingService";
+import { analyzePerformance, estimateAnalysisCost } from "../services/analyticsService";
 import { toast } from "../store/uiStore";
 import { channelTextColor } from "../lib/color";
+import { formatUSD } from "../lib/pricing";
+import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
 
 const TABS = ["Overview", "Research", "Script", "Packaging", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
@@ -35,10 +37,10 @@ export default function VideoWorkspace() {
   const video = useStore((s) => s.videos.find((v) => v.id === id));
   const updateVideo = useStore((s) => s.updateVideo);
   const deleteVideo = useStore((s) => s.deleteVideo);
-  const aiSettings = useStore((s) => s.settings.ai);
   const theme = useStore((s) => s.settings.theme);
   const [tab, setTab] = useState<Tab>("Overview");
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
 
   if (!video) {
     return (
@@ -57,44 +59,56 @@ export default function VideoWorkspace() {
   const channel = CHANNEL_MAP[video.channelId];
 
   async function runResearch() {
+    const est = estimateResearchCost(video!, aiSettings);
+    if (!confirmSpend(est, "AI Research")) return;
     setLoading("research");
     try {
       const research = await generateResearch(video!, aiSettings);
       updateVideo(video!.id, { research });
-      toast("Research generated", "success");
+      logSpend("Research", est);
+      toast(`Research generated${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setLoading(null);
     }
   }
 
   async function runScript() {
+    const est = estimateScriptCost(video!, aiSettings);
+    if (!confirmSpend(est, "Generate Script")) return;
     setLoading("script");
     try {
       const script = await generateScript(video!, aiSettings);
       updateVideo(video!.id, { script });
-      toast("Script generated", "success");
+      logSpend("Script", est);
+      toast(`Script generated${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setLoading(null);
     }
   }
 
   async function runPackaging() {
+    const est = estimatePackagingCost(video!, aiSettings);
+    if (!confirmSpend(est, "Generate Packaging")) return;
     setLoading("packaging");
     try {
       const packaging = await generatePackaging(video!, aiSettings);
       updateVideo(video!.id, { packaging });
-      toast("Packaging generated", "success");
+      logSpend("Packaging", est);
+      toast(`Packaging generated${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setLoading(null);
     }
   }
 
   async function runAnalysis() {
+    const est = estimateAnalysisCost(video!, aiSettings);
+    if (!confirmSpend(est, "Analyze Performance")) return;
     setLoading("analysis");
     try {
       const aiAnalysis = await analyzePerformance(video!, aiSettings);
       updateVideo(video!.id, { aiAnalysis });
-      toast("Performance analysis ready", "success");
+      logSpend("Analysis", est);
+      toast(`Performance analysis ready${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
     } finally {
       setLoading(null);
     }
@@ -264,9 +278,12 @@ export default function VideoWorkspace() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-base-100">1. Research</h3>
-            <button className="btn-primary" onClick={runResearch} disabled={loading === "research"}>
-              {loading === "research" ? "Researching…" : "AI Research"}
-            </button>
+            <div className="flex items-center gap-2">
+              <CostHint costUSD={estimateResearchCost(video, aiSettings)} />
+              <button className="btn-primary" onClick={runResearch} disabled={loading === "research"}>
+                {loading === "research" ? "Researching…" : "AI Research"}
+              </button>
+            </div>
           </div>
           {!video.research ? (
             <EmptyState title="No research yet" body="Click AI Research to generate key facts, angles, and sources tailored to this channel." />
@@ -317,9 +334,12 @@ export default function VideoWorkspace() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-base-100">2. Script</h3>
-            <button className="btn-primary" onClick={runScript} disabled={loading === "script"}>
-              {loading === "script" ? "Writing…" : "Generate Script"}
-            </button>
+            <div className="flex items-center gap-2">
+              <CostHint costUSD={estimateScriptCost(video, aiSettings)} />
+              <button className="btn-primary" onClick={runScript} disabled={loading === "script"}>
+                {loading === "script" ? "Writing…" : "Generate Script"}
+              </button>
+            </div>
           </div>
           {!video.script ? (
             <EmptyState title="No script yet" body="Generate 5 hooks, a full script, and retention beats matched to this channel's voice." />
@@ -385,9 +405,12 @@ export default function VideoWorkspace() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-base-100">3. Packaging</h3>
-            <button className="btn-primary" onClick={runPackaging} disabled={loading === "packaging"}>
-              {loading === "packaging" ? "Generating…" : "Generate Packaging"}
-            </button>
+            <div className="flex items-center gap-2">
+              <CostHint costUSD={estimatePackagingCost(video, aiSettings)} />
+              <button className="btn-primary" onClick={runPackaging} disabled={loading === "packaging"}>
+                {loading === "packaging" ? "Generating…" : "Generate Packaging"}
+              </button>
+            </div>
           </div>
           {!video.packaging ? (
             <EmptyState title="No packaging yet" body="Generate 10 titles, thumbnail concept, description, tags, chapters and a pinned comment." />
@@ -498,9 +521,12 @@ export default function VideoWorkspace() {
 
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-base-100">AI Performance Analysis</h3>
-            <button className="btn-primary" onClick={runAnalysis} disabled={loading === "analysis"}>
-              {loading === "analysis" ? "Analyzing…" : "Analyze Performance"}
-            </button>
+            <div className="flex items-center gap-2">
+              <CostHint costUSD={estimateAnalysisCost(video, aiSettings)} />
+              <button className="btn-primary" onClick={runAnalysis} disabled={loading === "analysis"}>
+                {loading === "analysis" ? "Analyzing…" : "Analyze Performance"}
+              </button>
+            </div>
           </div>
           {!video.aiAnalysis ? (
             <EmptyState title="No analysis yet" body="Enter metrics above, then run the AI performance analysis for concrete conclusions." />

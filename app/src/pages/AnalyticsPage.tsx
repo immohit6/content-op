@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useStore, ALL_CHANNELS } from "../store/store";
 import { CHANNEL_MAP } from "../data/channels";
 import { PageHeader } from "../components/layout";
-import { ChannelPill, EmptyState, StatCard } from "../components/common";
+import { ChannelPill, CostHint, EmptyState, StatCard } from "../components/common";
 import { formatShortDate } from "../lib/utils";
-import { analyzePerformance } from "../services/analyticsService";
+import { analyzePerformance, estimateAnalysisCost } from "../services/analyticsService";
 import { toast } from "../store/uiStore";
+import { formatUSD } from "../lib/pricing";
+import { useAIBudgetGuard } from "../lib/useAIBudgetGuard";
 
 const METRIC_FIELDS = [
   ["views", "Views"],
@@ -22,7 +24,7 @@ export default function AnalyticsPage() {
   const navigate = useNavigate();
   const videos = useStore((s) => s.videos);
   const updateVideo = useStore((s) => s.updateVideo);
-  const aiSettings = useStore((s) => s.settings.ai);
+  const { confirmSpend, logSpend, aiSettings } = useAIBudgetGuard();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -45,11 +47,14 @@ export default function AnalyticsPage() {
   async function runAnalysis(videoId: string) {
     const video = videos.find((v) => v.id === videoId);
     if (!video) return;
+    const est = estimateAnalysisCost(video, aiSettings);
+    if (!confirmSpend(est, "Analyze Performance")) return;
     setLoadingId(videoId);
     try {
       const aiAnalysis = await analyzePerformance(video, aiSettings);
       updateVideo(videoId, { aiAnalysis });
-      toast("Performance analysis ready", "success");
+      logSpend("Analysis", est);
+      toast(`Performance analysis ready${est > 0 ? ` · ~${formatUSD(est)}` : ""}`, "success");
       setExpanded(videoId);
     } finally {
       setLoadingId(null);
@@ -86,10 +91,11 @@ export default function AnalyticsPage() {
                       {v.title}
                     </button>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <button className="btn-secondary" onClick={() => setExpanded(isExpanded ? null : v.id)}>
                       {isExpanded ? "Hide" : "Edit metrics"}
                     </button>
+                    <CostHint costUSD={estimateAnalysisCost(v, aiSettings)} />
                     <button className="btn-primary" onClick={() => runAnalysis(v.id)} disabled={loadingId === v.id}>
                       {loadingId === v.id ? "Analyzing…" : "AI Analysis"}
                     </button>
