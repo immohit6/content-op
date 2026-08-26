@@ -13,14 +13,20 @@ import { extractVideoId, fetchLiveVideoStats, YouTubeApiError } from "../service
 import { ImportYouTubeModal } from "../components/ImportYouTubeModal";
 import { Video } from "../types";
 
-const METRIC_FIELDS = [
-  ["views", "Views", true],
-  ["ctr", "CTR %", false],
-  ["avgViewDurationSec", "Avg. view (sec)", false],
-  ["avgPercentViewed", "Avg. % viewed", false],
-  ["likes", "Likes", true],
-  ["comments", "Comments", true],
-  ["subscribersGained", "Subs gained", false],
+// Pulled live from YouTube via Sync — always shown on the card.
+const LIVE_METRIC_FIELDS = [
+  ["views", "Views"],
+  ["likes", "Likes"],
+  ["comments", "Comments"],
+] as const;
+
+// Not available from the public YouTube Data API — manual entry only, kept
+// inside "Edit metrics" instead of cluttering the default card.
+const MANUAL_METRIC_FIELDS = [
+  ["ctr", "CTR %"],
+  ["avgViewDurationSec", "Avg. view (sec)"],
+  ["avgPercentViewed", "Avg. % viewed"],
+  ["subscribersGained", "Subs gained"],
 ] as const;
 
 export default function AnalyticsPage() {
@@ -46,9 +52,7 @@ export default function AnalyticsPage() {
   const totals = useMemo(() => {
     const withViews = published.filter((v) => v.metrics?.views);
     const totalViews = withViews.reduce((sum, v) => sum + (v.metrics?.views ?? 0), 0);
-    const avgCtr = withViews.length ? withViews.reduce((s, v) => s + (v.metrics?.ctr ?? 0), 0) / withViews.length : 0;
-    const avgRetention = withViews.length ? withViews.reduce((s, v) => s + (v.metrics?.avgPercentViewed ?? 0), 0) / withViews.length : 0;
-    return { totalViews, avgCtr, avgRetention, count: published.length };
+    return { totalViews, count: published.length };
   }, [published]);
 
   const byChannel = useMemo(() => {
@@ -63,7 +67,7 @@ export default function AnalyticsPage() {
         comments: withViews.reduce((s, v) => s + (v.metrics?.comments ?? 0), 0),
         synced: withViews.length,
       };
-    });
+    }).filter((c) => c.publishedCount > 0);
   }, [published]);
 
   async function syncOne(v: Video, { silent }: { silent?: boolean } = {}): Promise<boolean> {
@@ -151,40 +155,40 @@ export default function AnalyticsPage() {
 
       <ImportYouTubeModal open={showImport} onClose={() => setShowImport(false)} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         <StatCard label="Published videos" value={totals.count} />
         <StatCard label="Total views" value={totals.totalViews.toLocaleString()} />
-        <StatCard label="Avg. CTR" value={`${totals.avgCtr.toFixed(1)}%`} sub="manual entry" />
-        <StatCard label="Avg. % viewed" value={`${totals.avgRetention.toFixed(0)}%`} sub="manual entry" />
       </div>
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold text-base-100">By channel</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {byChannel.map(({ channel, publishedCount, views, likes, comments, synced }) => (
-            <div key={channel.id} className="card px-4 py-4">
-              <ChannelPill channel={channel} />
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <div className="text-base font-semibold text-base-100">{views.toLocaleString()}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-base-500">Views</div>
+      {byChannel.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-base-100">By channel</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {byChannel.map(({ channel, publishedCount, views, likes, comments, synced }) => (
+              <div key={channel.id} className="card px-4 py-4">
+                <ChannelPill channel={channel} />
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-base font-semibold text-base-100">{views.toLocaleString()}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-base-500">Views</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold text-base-100">{likes.toLocaleString()}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-base-500">Likes</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold text-base-100">{comments.toLocaleString()}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-base-500">Comments</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-base font-semibold text-base-100">{likes.toLocaleString()}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-base-500">Likes</div>
-                </div>
-                <div>
-                  <div className="text-base font-semibold text-base-100">{comments.toLocaleString()}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-base-500">Comments</div>
+                <div className="mt-2 text-[11px] text-base-500">
+                  {publishedCount} published · {synced} synced live
                 </div>
               </div>
-              <div className="mt-2 text-[11px] text-base-500">
-                {publishedCount} published · {synced} synced live
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {published.length === 0 ? (
         <EmptyState title="No published videos yet" body="Once you publish something, sync or log its metrics here." />
@@ -236,14 +240,11 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-7">
-                  {METRIC_FIELDS.map(([key, label, isLive]) => (
+                <div className="mt-3 flex gap-6">
+                  {LIVE_METRIC_FIELDS.map(([key, label]) => (
                     <div key={key}>
-                      <div className="text-[10px] uppercase tracking-wide text-base-500">
-                        {label}
-                        {isLive && <span className="ml-1 text-emerald-500">●</span>}
-                      </div>
-                      <div className="text-sm font-semibold text-base-100">{v.metrics?.[key] ?? "—"}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-base-500">{label}</div>
+                      <div className="text-sm font-semibold text-base-100">{v.metrics?.[key]?.toLocaleString() ?? "—"}</div>
                     </div>
                   ))}
                 </div>
@@ -251,12 +252,11 @@ export default function AnalyticsPage() {
                 {isExpanded && (
                   <div className="mt-4 border-t border-base-700/60 pt-4">
                     <p className="mb-3 text-[11px] text-base-500">
-                      <span className="text-emerald-500">●</span> Views/Likes/Comments can be pulled live from
-                      YouTube (Sync button above). The rest aren't available via the public API, so enter them
-                      manually if you have them from YouTube Studio.
+                      Views/Likes/Comments come live from YouTube via Sync. These aren't available via the public
+                      API — enter them manually if you have them from YouTube Studio.
                     </p>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      {METRIC_FIELDS.map(([key, label]) => (
+                      {MANUAL_METRIC_FIELDS.map(([key, label]) => (
                         <div key={key}>
                           <label className="label">{label}</label>
                           <input

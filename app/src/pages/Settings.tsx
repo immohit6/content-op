@@ -25,6 +25,7 @@ export default function Settings() {
   const exportData = useStore((s) => s.exportData);
   const importData = useStore((s) => s.importData);
   const resetDemoData = useStore((s) => s.resetDemoData);
+  const clearAllContent = useStore((s) => s.clearAllContent);
   const spend = useStore((s) => s.spend);
   const resetSpend = useStore((s) => s.resetSpend);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -393,11 +394,31 @@ export default function Settings() {
           {importMessage && <p className="text-xs text-accent-soft">{importMessage}</p>}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-base-700/60 pt-4">
             <div>
-              <div className="text-sm font-medium text-base-100">Reset to demo data</div>
-              <div className="text-xs text-base-400">Restore the original sample channels, videos, and ideas.</div>
+              <div className="text-sm font-medium text-base-100">Start fresh</div>
+              <div className="text-xs text-base-400">
+                Clears every video, idea, and the spend log back to empty. Your AI/YouTube keys and channel links
+                stay saved.
+              </div>
             </div>
             <button
               className="btn-ghost !text-red-400"
+              onClick={() => {
+                if (confirm("This permanently deletes all videos, ideas, and your spend history. Your settings and API keys are kept. Continue?")) {
+                  clearAllContent();
+                  toast("Cleared — starting fresh", "success");
+                }
+              }}
+            >
+              Clear all content
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-base-700/60 pt-4">
+            <div>
+              <div className="text-sm font-medium text-base-100">Reset to demo data</div>
+              <div className="text-xs text-base-400">Replace everything with the original sample channels, videos, and ideas.</div>
+            </div>
+            <button
+              className="btn-ghost !text-base-400"
               onClick={() => {
                 if (confirm("This replaces all current videos and ideas with the demo data. Continue?")) {
                   resetDemoData();
