@@ -1,7 +1,7 @@
 {
-  "name": "Content Ops",
-  "short_name": "Content Ops",
-  "description": "5-channel YouTube content operations command centre",
+  "name": "Content OS",
+  "short_name": "Content OS",
+  "description": "Personal AI content operating system for a 5-channel YouTube operation",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

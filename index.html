@@ -3,19 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <title>Content Ops</title>
+  <title>Content OS</title>
 
-  <!-- PWA manifest -->
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#0A0D13" />
 
-  <!-- Tailwind utilities used throughout the app's layout (flex/grid/spacing) -->
-  <link rel="stylesheet" href="./tailwind.css" />
-
-  <!-- iOS "Add to Home Screen" support -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Content Ops" />
+  <meta name="apple-mobile-web-app-title" content="Content OS" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <link rel="icon" href="./icon-192.png" />
 
@@ -26,11 +21,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <script src="./app.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
-    }
-  </script>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
