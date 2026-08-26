@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
     }
     const syncable = published.filter((v) => extractVideoId(v.videoUrl ?? ""));
     if (syncable.length === 0) {
-      toast("No published videos have a YouTube URL set yet.", "error");
+      toast("No published videos have a YouTube URL set yet — paste one on each video below.", "error");
       return;
     }
     setSyncingAll(true);
@@ -208,6 +208,14 @@ export default function AnalyticsPage() {
                     <button className="text-left text-sm font-semibold text-base-100 hover:text-accent-soft" onClick={() => navigate(`/video/${v.id}`)}>
                       {v.title}
                     </button>
+                    {!canSync && (
+                      <input
+                        className="input mt-1.5 w-full max-w-sm text-xs"
+                        value={v.videoUrl ?? ""}
+                        placeholder="Paste the YouTube URL to enable syncing…"
+                        onChange={(e) => updateVideo(v.id, { videoUrl: e.target.value })}
+                      />
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
