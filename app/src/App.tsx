@@ -55,6 +55,11 @@ export default function App() {
 
 function RoutedContent() {
   const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     // Keyed by path so navigating away from a crashed page always gets a
     // fresh mount attempt, instead of staying stuck showing the error.
